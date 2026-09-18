@@ -98,26 +98,26 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONT-01 | — | Pending |
-| CONT-02 | — | Pending |
-| SKEL-01 | — | Pending |
-| DIST-01 | — | Pending |
-| ROAD-01 | — | Pending |
-| LOOP-01 | — | Pending |
-| READ-01 | — | Pending |
-| READ-02 | — | Pending |
-| SLVG-01 | — | Pending |
-| SETP-01 | — | Pending |
-| CAMP-01 | — | Pending |
-| VISL-01 | — | Pending |
-| PROOF-01 | — | Pending |
-| PROOF-02 | — | Pending |
+| CONT-01 | Phase 1 | Pending |
+| CONT-02 | Phase 2 | Pending |
+| SKEL-01 | Phase 2 | Pending |
+| DIST-01 | Phase 4 | Pending |
+| ROAD-01 | Phase 3 | Pending |
+| LOOP-01 | Phase 8 | Pending |
+| READ-01 | Phase 8 | Pending |
+| READ-02 | Phase 8 | Pending |
+| SLVG-01 | Phase 5 | Pending |
+| SETP-01 | Phase 6 | Pending |
+| CAMP-01 | Phase 5 | Pending |
+| VISL-01 | Phase 9 | Pending |
+| PROOF-01 | Phase 7 | Pending |
+| PROOF-02 | Phase 7 | Pending |
 
 **Coverage:**
 - v1 requirements: 14 total
-- Mapped to phases: 0
-- Unmapped: 14 ⚠️ (filled by roadmap)
+- Mapped to phases: 14
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-09-18*
-*Last updated: 2026-09-18 after initial definition*
+*Last updated: 2026-09-19 after roadmap creation*
