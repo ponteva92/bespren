@@ -33,7 +33,12 @@ Brownfield visual + map-composition milestone. Core value: at 480×270 the world
   1. Reviewer can open a `docs/` redesign contract that names camp, roads, district jobs, landmarks, salvage/threat pockets, 30s-loop beats, way-home language that is not the minimap, exclusion volumes, and capture cameras that will prove the loop
   2. Reviewer can read an audit of the current map — captures, density, pocket/obstacle overlaps, 1× unreadables — quoting live counts, not stale foundation docs
   3. Phase 1 diff contains no `src/world/` layout edits, no new atlas regions in `src/world/`, and no scenery/cover/resource count changes
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Live 14×14 census in docs/WORLD_MAP_AUDIT.md (seed, camp, eight routes, density, pocket 2, 1× unreadables, 25 captures)
+- [ ] 01-02-PLAN.md — Locked redesign contract in docs/WORLD_MAP_REDESIGN_CONTRACT.md (camp, roads, shout nouns, 30s beats, exclusions, named cameras)
+- [ ] 01-03-PLAN.md — CONT-01 proof: heading checklist, live-constant table vs RESEARCH census, empty src/world/ git path filter
 
 ### Phase 2: Authored Skeleton
 **Goal**: Player traverses an authored skeleton stored as composition data, still inside 14×14 / ±14,336
@@ -133,7 +138,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Map Audit + Redesign Contract | 0/TBD | Not started | - |
+| 1. Map Audit + Redesign Contract | 0/3 | Not started | - |
 | 2. Authored Skeleton | 0/TBD | Not started | - |
 | 3. Readable Road Hierarchy | 0/TBD | Not started | - |
 | 4. District Jobs | 0/TBD | Not started | - |
