@@ -13,7 +13,7 @@ Brownfield visual + map-composition milestone. Core value: at 480×270 the world
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Map Audit + Redesign Contract** - Census the 14×14 map and write the contract; zero world-authoring code
+- [x] **Phase 1: Map Audit + Redesign Contract** - Census the 14×14 map and write the contract; zero world-authoring code (completed 2026-09-19)
 - [ ] **Phase 2: Authored Skeleton** - Consume composition data for paths, edges, districts, nodes, landmarks inside locked extents
 - [ ] **Phase 3: Readable Road Hierarchy** - Asphalt spine, dirt branch, and wilderness perimeter read as the loop's path at 1×
 - [ ] **Phase 4: District Jobs** - Kaupunki choke, Ostari salvage, Kylät quiet, Metsä threat read without labels
@@ -37,7 +37,7 @@ Brownfield visual + map-composition milestone. Core value: at 480×270 the world
   2. Reviewer can read an audit of the current map — captures, density, pocket/obstacle overlaps, 1× unreadables — quoting live counts, not stale foundation docs
   3. Phase 1 diff contains no `src/world/` layout edits, no new atlas regions in `src/world/`, and no scenery/cover/resource count changes
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 1**
@@ -50,7 +50,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-03-PLAN.md — CONT-01 proof: heading checklist, live-constant table vs RESEARCH census, empty src/world/ git path filter
+- [x] 01-03-PLAN.md — CONT-01 proof: heading checklist, live-constant table vs RESEARCH census, empty src/world/ git path filter
 
 ### Phase 2: Authored Skeleton
 
@@ -174,7 +174,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Map Audit + Redesign Contract | 2/3 | In Progress|  |
+| 1. Map Audit + Redesign Contract | 3/3 | Complete   | 2026-09-19 |
 | 2. Authored Skeleton | 0/TBD | Not started | - |
 | 3. Readable Road Hierarchy | 0/TBD | Not started | - |
 | 4. District Jobs | 0/TBD | Not started | - |
