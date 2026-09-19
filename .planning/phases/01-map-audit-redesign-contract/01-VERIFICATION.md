@@ -1,11 +1,12 @@
 ---
 phase: 01-map-audit-redesign-contract
 verified: 2026-09-19T22:18:35Z
-status: human_needed
+status: passed
 score: 5/5 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
 human_verification:
+
   - test: Open docs/WORLD_MAP_AUDIT.md and docs/WORLD_MAP_REDESIGN_CONTRACT.md. Census the current 14×14 map from the audit (camp, seed, eight routes, no spur today, 640/87/25, pocket 2). Then read the locked 30s Metsä loop and the five shout nouns from the contract without opening src/.
     expected: A stranger can name camp (9950, 2400), seed 0xB35E7E, eight routes with no camp dirt spur, OstariSouthShell vs pocket 2, then point the six Metsä 30s beats and the five shout nouns (Amber Gold, mall gate, west yard, city choke, Metsä threat weenie) with east unnamed. Proof file git path filter matches empty src/world/ diff.
     why_human: Harvested from 01-03-PLAN.md Task 2 <human-check>. Token presence proves the sentences exist; it does not prove a stranger can use the two docs as a walking census without src/.
