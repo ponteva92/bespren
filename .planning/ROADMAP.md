@@ -37,12 +37,12 @@ Brownfield visual + map-composition milestone. Core value: at 480×270 the world
   2. Reviewer can read an audit of the current map — captures, density, pocket/obstacle overlaps, 1× unreadables — quoting live counts, not stale foundation docs
   3. Phase 1 diff contains no `src/world/` layout edits, no new atlas regions in `src/world/`, and no scenery/cover/resource count changes
 
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 01-01-PLAN.md — Live 14×14 census in docs/WORLD_MAP_AUDIT.md (seed, camp, eight routes, density, pocket 2, 1× unreadables, 25 captures)
+- [x] 01-01-PLAN.md — Live 14×14 census in docs/WORLD_MAP_AUDIT.md (seed, camp, eight routes, density, pocket 2, 1× unreadables, 25 captures)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -174,7 +174,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Map Audit + Redesign Contract | 0/3 | Not started | - |
+| 1. Map Audit + Redesign Contract | 1/3 | In Progress|  |
 | 2. Authored Skeleton | 0/TBD | Not started | - |
 | 3. Readable Road Hierarchy | 0/TBD | Not started | - |
 | 4. District Jobs | 0/TBD | Not started | - |

@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 1
-current_phase_name: Map Audit + Redesign Contract
+current_phase: 01
+current_phase_name: map-audit-redesign-contract
 status: executing
-stopped_at: Phase 1 context gathered
-last_updated: "2026-09-19T19:09:42.043Z"
+stopped_at: Completed 01-01-PLAN.md
+last_updated: "2026-09-19T21:43:22.071Z"
 last_activity: 2026-09-19
-last_activity_desc: Roadmap created from v1 requirements
+last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 9
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 3
+  completed_plans: 1
   percent: 0
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-18)
 
 **Core value:** At 480×270, the world reads as authored places with a visible salvage loop — never as generated scatter on a grid.
-**Current focus:** Phase 1 — Map Audit + Redesign Contract
+**Current focus:** Phase 01 — map-audit-redesign-contract
 
 ## Current Position
 
-Phase: 1 of 9 (Map Audit + Redesign Contract)
-Plan: none yet
+Phase: 01 (map-audit-redesign-contract) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-09-19 — Roadmap created from v1 requirements
+Last activity: 2026-09-19 — Phase 01 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -54,6 +54,8 @@ Progress: [░░░░░░░░░░] 0%
 - Last 5 plans: —
 - Trend: —
 
+| Phase 01 P01 | 6min | 2 tasks | 1 files |
+
 ## Accumulated Context
 
 ### Decisions
@@ -62,6 +64,11 @@ Progress: [░░░░░░░░░░] 0%
 - CONT-02 lives in Phase 2 (first phase that may move camp/roads). Extents stay 14×14.
 - Fine split: skeleton → roads → district jobs → pockets → set pieces → capture proof → 1× verdict → visual lift.
 - VISL-01 after the skeleton reads (Phase 8). No HDR 2D, extra fullscreen passes, runtime 3D, or new gameplay.
+- [Phase 01]: Audit quotes live .gd constants; WORLD_MAP_FOUNDATION.md 576/23/150 are drift, not rewritten — D-26: census from src/world and tests, not foundation prose
+- [Phase 01]: No camp dirt spur exists today; D-02 remains a contract invention — Eight routes; none terminate at (9950, 2400)
+- [Phase 01]: Wilderness pocket 2 vs OstariSouthShell recorded; MAXIMUM_UNHOSTABLE_POCKETS stays 1 — D-19: name the overlap, do not move the pocket
+- [Phase 01]: Wild-atlas runtime_promotion remains forbidden_pending_human_visual_veto; no Rect2 copied into src — T-01-02: audit must not promote forbidden frames
+- [Phase 01]: LAYOUT_VERSION 2 and WORLD_BUILD_SEED 0xB35E7E frozen this plan — D-28: Phase 1 does not bump layout or seed
 
 ### Pending Todos
 
@@ -86,6 +93,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-19T14:54:53.075Z
-Stopped at: Phase 1 context gathered
-Resume file: .planning/phases/01-map-audit-redesign-contract/01-CONTEXT.md
+Last session: 2026-09-19T21:43:22.053Z
+Stopped at: Completed 01-01-PLAN.md
+Resume file: None
