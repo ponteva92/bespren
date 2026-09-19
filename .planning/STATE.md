@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: map-audit-redesign-contract
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-09-19T21:43:22.071Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-09-19T21:55:11.488Z"
 last_activity: 2026-09-19
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 9
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
-  percent: 0
+  completed_plans: 2
+  percent: 67
 ---
 
 # Project State
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-18)
 ## Current Position
 
 Phase: 01 (map-audit-redesign-contract) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-09-19 — Phase 01 execution started
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -55,6 +55,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: —
 
 | Phase 01 P01 | 6min | 2 tasks | 1 files |
+| Phase 01 P02 | 3min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,11 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 01]: Wilderness pocket 2 vs OstariSouthShell recorded; MAXIMUM_UNHOSTABLE_POCKETS stays 1 — D-19: name the overlap, do not move the pocket
 - [Phase 01]: Wild-atlas runtime_promotion remains forbidden_pending_human_visual_veto; no Rect2 copied into src — T-01-02: audit must not promote forbidden frames
 - [Phase 01]: LAYOUT_VERSION 2 and WORLD_BUILD_SEED 0xB35E7E frozen this plan — D-28: Phase 1 does not bump layout or seed
+- [Phase 01]: Dirt spur is a Phase 2 route; contract uses relative language, no Vector2 join — D-02 remains a contract invention; no frozen spur join coordinates
+- [Phase 01]: Exactly five shout nouns; east village unnamed; mall gate is a missing-tooth gap — D-11 D-18; landmark table five rows not six
+- [Phase 01]: Fifteen camera IDs specified; tests/world_render_validation.gd untouched — D-27 cameras are table IDs for Phase 7
+- [Phase 01]: WorldCompositionContract named as Phase 2 type; no .tres this plan — D-25 docs-only; Resource is Phase 2
+- [Phase 01]: Duplicate WorldBackgroundDecor2D.CAMP_POSITION is a Phase 2 grep trap — Grepping only STARTING_CAMP_POSITION misses the decor literal
 
 ### Pending Todos
 
@@ -93,6 +99,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-19T21:43:22.053Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-09-19T21:54:28.843Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None

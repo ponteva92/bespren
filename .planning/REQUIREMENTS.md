@@ -9,7 +9,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Map Contract
 
-- [ ] **CONT-01**: Team can audit the current 14×14 map (captures, density, pocket/obstacle overlaps, 1× unreadables) and write a redesign contract in `docs/` that names camp, roads, district jobs, landmarks, salvage/threat pockets, 30s-loop beats, way-home language, exclusion volumes, and capture cameras — with zero world-authoring code in that phase
+- [x] **CONT-01**: Team can audit the current 14×14 map (captures, density, pocket/obstacle overlaps, 1× unreadables) and write a redesign contract in `docs/` that names camp, roads, district jobs, landmarks, salvage/threat pockets, 30s-loop beats, way-home language, exclusion volumes, and capture cameras — with zero world-authoring code in that phase
 - [ ] **CONT-02**: Playable extents stay 14×14 cells / ±14,336; camp, roads, obstacles, and resources may relocate to serve the contract
 
 ### Authored Skeleton
@@ -98,7 +98,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONT-01 | Phase 1 | Pending |
+| CONT-01 | Phase 1 | Complete |
 | CONT-02 | Phase 2 | Pending |
 | SKEL-01 | Phase 2 | Pending |
 | DIST-01 | Phase 4 | Pending |
@@ -114,6 +114,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROOF-02 | Phase 7 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 14 total
 - Mapped to phases: 14
 - Unmapped: 0
