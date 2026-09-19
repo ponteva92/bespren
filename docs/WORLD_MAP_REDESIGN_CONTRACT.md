@@ -130,28 +130,134 @@ Asphalt spine commute to Ostari mall salvage through the mall-gate gap. Ostari o
 
 ## Salvage and threat pockets
 
-Stub for Task 2: pocket jobs only (teaching near camp; Ostari 10-minute density; city/villages sparse); 87 IDs / 3–5 / one-unit frozen; no node coordinates.
+Jobs only. No node coordinates. This file does not freeze teaching offsets as target seats.
+
+`BesprenResourceScatter2D` stays a fixed-path RPC controller (D-28). Freeze, do not bump:
+
+| Contract | Value | Notes |
+|----------|-------|-------|
+| Resource IDs | 87 | Three teaching + 84 later pocket seats; sector oatmeal is the *current* fact, not the target identity |
+| Gather interactions | 3–5 | `MIN_GATHER_INTERACTIONS` / `MAX_GATHER_INTERACTIONS` |
+| Yield | 1 unit on completion only | `HARVEST_AMOUNT` |
+| `LAYOUT_VERSION` | 2 | Frozen this phase |
+| `DEFAULT_SCATTER_SEED` | `0x5CA77E2` | Frozen this phase |
+
+A client never submits a resource ID, amount, or position. Peer one rate-limits interactions, uses its stored authoritative player position, and grants zero on intermediate steps.
+
+**Pocket jobs (D-17):**
+
+| Pocket job | Where | Identity |
+|------------|-------|----------|
+| Teaching / nearby | Metsä, inside the camp hero bowl / just off the spur | 30s beat 5. A **place**, not a fifth weenie (D-12) |
+| 10-minute salvage density | Ostari, through the mall-gate gap | Ostari owns salvage identity |
+| Sparse nodes | Kaupunki and both Kylät | Allowed; they do **not** own salvage identity |
+| Threat approach | Metsä, after the threat weenie | 30s beat 6; not a gather pocket |
+
+Audit teaching offsets `(390, 120)`, `(-410, 150)`, `(130, -430)` relative to current `STARTING_CAMP_POSITION` are **current facts**, not target coords. Phase 5 co-authors pocket tables with obstacle tables. Phase 1 does not invent scatter replacements.
 
 ## Exclusion volumes
 
-Stub for Task 2: name camp radii, road-edge, landmark discs, satellite bowl, and which layer owns which (D-27); presentation never writes collision or flow.
+Name the volume, the live-or-target number, and which layer owns it (D-27). Analog habit from `docs/WORLD_MAP_VISUAL_PRODUCTION_PLAN.md`: radius plus owning layer. Live numbers below are **current implementation**; this contract restates jobs and owners. Phase 2 retunes. Presentation never writes collision or flow (D-28). Dress salts stay visual (`WORLD_BUILD_SEED + 91 / +137 / +173 / +211`).
+
+| Volume | Live or target | Owner |
+|--------|----------------|-------|
+| CampOpenGameplay | `STARTING_CAMP_OPEN_RADIUS` 520 | map / colliding forest |
+| CampSceneryBowl | 1760 ambient | dress layer salt `+137` |
+| CampRoadEdge | `STARTING_CAMP_REQUIRED_ROAD_EDGE_CLEARANCE` 1600 (measured 2098 today) | map |
+| RoadEdgeUrbanAsphaltDress | 480 | dress |
+| RoadEdgeForestDress | 300 | dress |
+| LandmarkDiscs | named, not GDScript yet | later co-author with obstacles |
+| SatelliteFurnitureBowl | three offsets stay inside the bowl (D-04) | map |
+
+CampOpenGameplay is the colliding-forest inner clear so the hero bowl is walkable. CampSceneryBowl is the larger ambient clear so dress does not fill the bowl. CampRoadEdge keeps the refuge secluded from asphalt; the dirt spur is the one authored exception that *crosses* that job without turning camp into a junction. LandmarkDiscs keep weenie silhouettes from drowning in scatter. SatelliteFurnitureBowl keeps bedding / supply / medical as furniture inside the bowl, not distant stamps.
+
+Dress-layer radii are **not** `WorldStatic`. A scenery bowl must not stamp collision or flow.
 
 ## Way-home language
 
-Stub for Task 2: follow asphalt to the dirt spur; Amber Gold confirms near camp; district weenies are local nouns; proof frames hide the minimap (D-23).
+Asphalt always leads home (D-23).
+
+1. Every district exit hits the asphalt spine.
+2. Follow asphalt to the dirt spur.
+3. Follow the spur into the hero clearing.
+4. Amber Gold confirms near camp. Silhouettes confirm before hue.
+5. District weenies (mall gate, west yard, city choke, Metsä threat weenie) are **local nouns**, not compasses. They name the place you are in; they do not point home.
+6. The minimap is not the way-home.
+
+**Proof frames hide the minimap.** Shipping HUD keeps the `72 × 54` minimap; review captures hide it. Way-home cameras (`cam_home_from_*`) are judged with **minimap hidden**. A stranger should find camp from roads, silhouettes, and Amber Gold (READ-02, Phase 8).
 
 ## Capture cameras
 
-Stub for Task 2: specified IDs only (`cam_loop_01_camp_clearing` through `cam_job_metsa_canopy_wall`); not implemented; no nodes in `tests/world_render_validation.gd` (D-27).
+Specified, not implemented (D-27). Gameplay zoom class `0.38` (`GAMEPLAY_CAMERA_ZOOM`). Do not add nodes to `tests/world_render_validation.gd` or `tests/world_render_validation.tscn`. Do not retarget leftover scrap look-ats (`CityScrapPile_00`, `CityVehicleWreck_02`) as loop-proof cameras. Prefer TIME-stable look-ats for silhouette claims. Camp frames are TIME-noisy; judge silhouette, not pixel diffs. Tree / canopy claims use `forest_density` only.
+
+| camera_id | Beat | HUD | TIME class | Phase |
+|-----------|------|-----|------------|-------|
+| cam_loop_01_camp_clearing | Hero bowl + Amber Gold + 3 satellites | optional | noisy (camp lights), judge silhouette not pixel diffs | 7 |
+| cam_loop_02_dirt_spur | Readable camp exit | optional | prefer stable verge | 7 |
+| cam_loop_03_asphalt_read | Short spine segment on 30s circuit | optional | `central_road_shoulder` class | 7 |
+| cam_loop_04_metsa_threat_weenie | 30s named landmark (D-12) | optional | `forest_density` class if treed | 7 |
+| cam_loop_05_teaching_salvage | Nearby pocket, not Ostari | optional | noisy if nodes pulse | 7 |
+| cam_loop_06_threat_approach | Threat beat then return | optional | as weenie | 7 |
+| cam_home_from_kaupunki | Way-home | minimap hidden | district | 7–8 |
+| cam_home_from_ostari | Way-home via mall-gate then spine | minimap hidden | mall stable | 7–8 |
+| cam_home_from_west_kylat | Way-home | minimap hidden | west village (night variant noisy) | 7–8 |
+| cam_home_from_east_kylat | Way-home; east unnamed | minimap hidden | `east_village` stable | 7–8 |
+| cam_job_kaupunki_choke | District job | optional | `city_density` / `city_building_detail` | 7 |
+| cam_job_ostari_mall_gate | Missing-tooth gap D-18 | optional | `mall` / `mall_long_shell` | 7 |
+| cam_job_west_yard | Negative space + silhouette, not fence-as-hero (D-15) | optional | west village | 7 |
+| cam_job_east_rest | Unnamed graveyard quiet | optional | `east_village` | 7 |
+| cam_job_metsa_canopy_wall | Forest threat job; FIR-01 named | optional | `forest_density` only | 7 |
+
+Fifteen IDs. Phase 7 implements loop and job cameras; Phase 7–8 implements way-home frames. This plan does not run Godot.
 
 ## Co-authorship and tripwires
 
-Stub for Task 2: pocket 2 vs `OstariSouthShell` recorded not moved; `MAXIMUM_UNHOSTABLE_POCKETS = 1`; wild veto; no nameplates; no second Amber Gold (D-19, D-08, D-10, D-28).
+**Pocket 2 vs OstariSouthShell (D-19).** Recorded, not moved. Live: `OstariSouthShell` at `(4850, -3150)` size `(6400, 1800)` (`VisualKind.MALL_SHELL`); wilderness pocket 2 `Vector4(2600, -2200, 700, 620)` in `WorldAmbientScenery2D.WILDERNESS_POCKETS` (duplicated in `WorldWildernessAccent2D`). Zero-clearance shell bounds x 1650..8050, y −4050..−2250 cover the upper portion of a pocket the ambient table still calls wilderness. `MAXIMUM_UNHOSTABLE_POCKETS = 1` stays. A second unhostable pocket is a new finding and a failure. Pocket tables and obstacle tables are co-authored from Phase 5. Phase 1 names the collision.
+
+**Wild non-tree (D-08).** `runtime_promotion = forbidden_pending_human_visual_veto` in `tests/existing_wild_atlas_context_validation.gd`. Five shipped tree yaws only. Do not copy new `WILD_TREE_REGIONS`. Salvage atlas has no `src/` consumer.
+
+**No nameplates. No second Amber Gold (D-10).** Identity stays redundant across hue, silhouette, iconography, and placement. East has no shout noun (D-11).
+
+**Single obstacle class (D-28).** `WorldObstacle2D` remains the single obstacle definition: `StaticBody2D` on `WorldStatic`, simplified `CollisionShape2D`, same oriented footprint for flow-field raster and host motion. Weenies later add `VisualKind` + atlas crop, never a second class. Phase 1 names weenies; it does not pick `Rect2`.
+
+Presentation never writes simulation. Collision, flow, gather rules, and peer-one RPC stay canonical. This slice does not bump `LAYOUT_VERSION` or `WORLD_BUILD_SEED`.
 
 ## Phase 2 consumer list
 
-Stub for Task 2: grep table when camp slides inside Metsä (D-22), including duplicate `WorldBackgroundDecor2D.CAMP_POSITION`; `WorldCompositionContract` is Phase 2, not this file's runtime.
+Grep targets when camp slides inside Metsä (D-22). Grepping only `STARTING_CAMP_POSITION` **misses** the duplicate decor literal.
+
+| Site | Role |
+|------|------|
+| `src/world/world_map_2d.gd` | canonical const + satellites + dress configure + tree clear |
+| `src/world/resource_scatter_2d.gd` | three teaching anchors |
+| `src/coop/coop_session.gd` `_spawn_position_for` | spawn ring literals |
+| `src/tactical/tactical_build_system.gd` | Base Core `global_position` + `set_core_position` |
+| `src/world/world_background_decor_2d.gd` | duplicate `CAMP_POSITION = Vector2(9950, 2400)` |
+| `tests/world_map_validation.gd` | `EXPECTED_STARTING_CAMP_POSITION` + satellite offsets |
+| `tests/smoke_test.gd` | expected camp |
+| `tests/mobile_systems_validation.gd` | expected camp |
+| `tests/world_render_validation.gd` | cameras read live const (good) |
+
+`WorldCompositionContract` Resource + `data/world/bespren_world_composition.tres` is **Phase 2**, not this file's runtime. Name the type `WorldCompositionContract` so Phase 2 does not renegotiate. `BesprenWorldMap2D.ensure_built()` consumes it later. Writing `.gd` / `.tres` in Phase 1 would be world-authoring by another name.
 
 ## Out of scope
 
-Stub for Task 2: FIR-01, SALV-01, fence vs house projection, TINT-01, PLACE-01, pocket-2 move, Resource `.tres`, extra stamps, Android / LAN, mechanics, HDR 2D, extra fullscreen pass, runtime 3D, shrinking ±14,336.
+Ordered deferral. This contract names the work; it does not start it.
+
+- **FIR-01** — fir canopy mass; geometry rebake measured on `forest_density`; named, not solved
+- **SALV-01** — salvage atlas after hosted-pocket 1× veto; no `src/` consumer today
+- **Fence vs house projection (D-15)** — three-quarter houses vs top-down barricade; west yard is silhouette + negative space, not a fence rebake
+- **TINT-01** — drop or retune `WILD_TREE_TINT` after a pine rebake no longer AgX-tans
+- **PLACE-01** — nested Theory of the Place after the primary path already reads
+- **Pocket-2 move** — `OstariSouthShell` overlap stays the recorded tripwire until Phase 5 co-author
+- **Resource `.tres`** — `WorldCompositionContract` + `data/world/bespren_world_composition.tres` is Phase 2
+- **Extra stamps** — SETP-01 / VISL-01; unique set pieces after the skeleton reads
+- **Android / two-device LAN** — DEV-01 / LAN-01; desktop green is not device certification
+- **Deposit / inventory / progression** — MECH-01; wrong milestone
+- **HDR 2D** — mobile bandwidth; RGBA16F forbidden
+- **Extra fullscreen pass** — budget is one weather overlay
+- **Runtime 3D** — no GLTF / mesh / PBR / Node3D in the export closure
+- **Shrinking ±14,336** — extents frozen
+
+Phase 1 docs are not importers. No new `Rect2`, no wild / salvage promotion, no `Addons/` dump.
+
