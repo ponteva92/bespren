@@ -1,7 +1,7 @@
 # World Map Audit — Live 14×14 Census
 
-Audit date: 2026-09-19  
-Scope root: `C:\Users\heikk\Desktop\Claude\gpt_peli`  
+Audit date: 2026-09-19
+Scope root: `C:\Users\heikk\Desktop\Claude\gpt_peli`
 Runtime target: Godot 4.7.1 Mobile, 2D, 480×270 landscape
 
 This census greps live `const` values in `src/world/` and `tests/` as they stand on 2026-09-19. It does not re-run GPU or headless world-map gates. It does not trust scenery, capture, or gate-count prose in `docs/WORLD_MAP_FOUNDATION.md`. This document is not pixel proof. On-disk `artifacts/world_*` freshness versus camp `(9950, 2400)` is not verified this session (RESEARCH A2). Filename inventory is not a claim that those PNGs match the live camera.
@@ -14,8 +14,8 @@ Method is grep of live identifiers, not a render pass and not a foundation-doc p
 
 1. Read `const` and authored tables in `src/world/world_map_2d.gd`, `world_road_network_2d.gd`, dress/scatter scripts, and matching `tests/*validation*.gd`.
 2. Quote the identifier, the numeric value, and the source path beside each row (D-26).
-3. Do not re-run Godot GPU or `--headless` world-map gates. Those gates prove the *old* map; they are not this census.
-4. Do not copy scenery 576 / forest 172 / captures 23 / `WORLD MAP VALIDATION OK (150)` from `docs/WORLD_MAP_FOUNDATION.md`. Those counts lag live code. Drift is Task 2.
+3. Do not re-run Godot GPU or `--headless` world-map gates. Those gates prove the old map; they are not this census.
+4. Do not copy scenery 576 / forest 172 / captures 23 / `WORLD MAP VALIDATION OK (150)` from `docs/WORLD_MAP_FOUNDATION.md`. Those counts lag live code.
 5. Do not treat on-disk `artifacts/world_*` PNGs as proof that the camp camera sits at `(9950, 2400)`. Capture-gate freshness versus camp is not verified this session (RESEARCH A2).
 6. Comment figures that no live gate pins this session — for example the `461` obstacle remark on `OBSTACLE_BROADPHASE_CELL` — stay comments, not census pins (RESEARCH A3).
 
@@ -97,24 +97,132 @@ From CONVENTIONS / `tests/world_map_validation.gd` `EXPECTED_*_Z`:
 
 ## Density tables
 
-Task 2 fills live dress/scatter counts (`TOTAL_SCENERY_COUNT` 640, decor 1100, `RESOURCE_COUNT` 87) against `.gd` constants, not foundation 576.
+Live dress and scatter counts. Quote the constant, not stale assertion English. `tests/world_map_validation.gd` still says `"Ambient scenery owns its exact 576 region-weighted ruin, tree, and prop groups"` while `EXPECTED_AMBIENT_SCENERY_TOTAL = 640` — the constant wins.
+
+| Constant | Value | File |
+|----------|-------|------|
+| `WorldAmbientScenery2D.TOTAL_SCENERY_COUNT` | 640 | `src/world/world_ambient_scenery_2d.gd` |
+| `WorldAmbientScenery2D.ZONE_SCENERY_COUNTS` | `[96, 72, 48, 48, 236, 92, 48]` | `src/world/world_ambient_scenery_2d.gd` |
+| Forest zone (index 4) | 236 | same (`SceneryZone.FOREST`) |
+| `tests/world_map_validation.gd` `EXPECTED_AMBIENT_SCENERY_TOTAL` | 640 | `tests/world_map_validation.gd` — quote this, not the stale "exact 576" English |
+| `WorldBackgroundDecor2D.RUBBLE_COUNT` | 300 | `src/world/world_background_decor_2d.gd` |
+| `WorldBackgroundDecor2D.CRACK_COUNT` | 160 | same |
+| `WorldBackgroundDecor2D.MOSS_COUNT` | 220 | same |
+| `WorldBackgroundDecor2D.PROP_COUNT` | 420 | same |
+| `WorldBackgroundDecor2D.TOTAL_DECORATION_COUNT` | 300+160+220+420 = 1100 | same |
+| `WorldWildernessAccent2D.TOTAL_ANCHOR_COUNT` | 24 | `src/world/world_wilderness_accent_2d.gd` |
+| Dress salt decor | `WORLD_BUILD_SEED + 91` | `src/world/world_map_2d.gd` `ensure_built` |
+| Dress salt ambient | `WORLD_BUILD_SEED + 137` | same |
+| Dress salt accent | `WORLD_BUILD_SEED + 173` | same |
+| Dress salt cover | `WORLD_BUILD_SEED + 211` | same |
+| `BesprenResourceScatter2D.RESOURCE_COUNT` | 87 | `src/world/resource_scatter_2d.gd` |
+| `BesprenResourceScatter2D.LAYOUT_VERSION` | 2 — freeze; do not bump (D-28) | same |
+| `BesprenResourceScatter2D.DEFAULT_SCATTER_SEED` | `0x5CA77E2` | same |
+| Sectors | `GLOBAL_SECTOR_COLUMNS` 12 × `GLOBAL_SECTOR_ROWS` 7 | same |
+| Teaching offsets | `(390, 120)`, `(-410, 150)`, `(130, -430)` relative to `STARTING_CAMP_POSITION` | same `_placement_for` |
+| `MIN_GATHER_INTERACTIONS` / `MAX_GATHER_INTERACTIONS` | 3–5 | same |
+| `HARVEST_AMOUNT` | 1 | same — freeze gather rules (D-28) |
+| `WorldBackgroundDecor2D.CAMP_POSITION` | `Vector2(9950, 2400)` duplicate literal | `src/world/world_background_decor_2d.gd` — Phase 2 grep trap; does not reference `BesprenWorldMap2D.STARTING_CAMP_POSITION` |
+| `WorldObstacle2D.WILD_TREE_REGIONS` | five `Rect2`s: `(76, 54, 104, 136)`, `(314, 49, 137, 141)`, `(574, 45, 131, 139)`, `(839, 41, 132, 133)`, `(1065, 44, 170, 161)` | `src/world/world_obstacle_2d.gd` — inventory only; do not copy new regions into `src` |
+
+Ground-cover `3,245` clusters / `38,947` elements is a CLAUDE.md §16 GDD figure, not a live gate pin this session (RESEARCH A1). Omit as a census authority. Obstacle count `461` is a comment on `OBSTACLE_BROADPHASE_CELL`, not a live gate pin (RESEARCH A3).
+
+Five shipped tree yaws only. Wild non-tree frames stay unpromoted.
 
 ## Pocket versus obstacle overlaps
 
-Task 2 records wilderness pocket 2 under `OstariSouthShell` (D-19). Do not move the pocket in this census.
+Record the overlap. Do not propose a new `Vector4`. Do not move the pocket (D-19).
+
+| Item | Live value | File |
+|------|------------|------|
+| Obstacle name | `OstariSouthShell` | `src/world/world_map_2d.gd` `_build_mall` |
+| Position | `Vector2(4850, -3150)` | same |
+| Size | `Vector2(6400, 1800)` | same |
+| Visual | `WorldObstacle2D.VisualKind.MALL_SHELL` | same |
+| Zero-clearance bounds (derived) | x 1650..8050, y −4050..−2250 | half-size of `(6400, 1800)` about `(4850, -3150)` |
+| Wilderness pocket 2 | `Vector4(2600, -2200, 700, 620)` | `src/world/world_ambient_scenery_2d.gd` `WILDERNESS_POCKETS` index 2 of 10 |
+| Duplicate pocket table | same `Vector4` at index 2 | `src/world/world_wilderness_accent_2d.gd` `WILDERNESS_POCKETS` |
+| `MAXIMUM_UNHOSTABLE_POCKETS` | 1 | `tests/existing_wild_atlas_context_validation.gd` |
+
+Pocket 2 sits under the long Ostari south shell. The shell's full-footprint foundation covers the upper portion of a pocket the ambient scenery table still calls wilderness. Accent layer duplicates the same pocket table, so both dress streams inherit the collision. The wild-atlas context gate records this as the one allowed unhostable pocket. Phase 1 names the collision. Pocket tables and obstacle tables are co-authored from Phase 5. `MAXIMUM_UNHOSTABLE_POCKETS = 1` stays.
 
 ## 1× unreadables
 
-Task 2 names FIR-01, the wild-atlas veto, fence/house projection mismatch, and scatter-as-place. Numeric pass is not promotion.
+Analog Loop C voice from `docs/AAA_VISUAL_REDESIGN_AUDIT_2026-09-16.md`: a visual veto overrides a numeric pass. A green headless or desktop-GPU test is not a promotion.
+
+**Fir canopy stalk (D-08, FIR-01).** Named, not solved. Sparse fir still reads as a stalk with branch tiers rather than a conifer mass at 1×. Geometry clip removed the hexagonal mound; canopy density is a subject problem a clip cannot address. Do not require a mass language in Phase 1. FIR-01 is later art.
+
+**Wild non-tree frames.** `runtime_promotion = forbidden_pending_human_visual_veto` in `tests/existing_wild_atlas_context_validation.gd`. Do not promote wild non-tree frames. Five shipped tree yaws in `WILD_TREE_REGIONS` only. Salvage atlas has no `src/` consumer.
+
+**Village fence vs house projection (D-15).** Named, not solved. Houses are three-quarter bakes; barricade segments are top-down. Alternating seeded flips broke equal-gap stamps; they did not make fence-as-hero. West yard will read by silhouette and negative space, not a fence rebake in this phase.
+
+**Scatter-as-place.** 87 IDs: three teaching offsets around camp plus 84 stratified global sectors (`12 × 7`). That is oatmeal plus three camp-adjacent nodes, not authored pocket places. Ostari does not own a salvage *place* today; the mall is a pair of shells with sector scatter nearby.
+
+**Product locks, not new weenies.** No second Amber Gold. Base Core remains the only dominant warm source (`CLAUDE.md` §8). No world-space nameplates. Identity stays redundant across hue, silhouette, iconography, and placement. East village has no shout noun (D-11) — that is a contract lock, not a missing sixth landmark in this census.
 
 ## Capture inventory
 
-Task 2 inventories the 25-capture set and TIME-stable class from `tests/world_render_validation.gd`. Filename inventory is not pixel proof.
+`tests/world_render_validation.gd` metadata sets `"capture_count": 25`. Do not write twenty-three. `GAMEPLAY_CAMERA_ZOOM = 0.38`.
+
+This is a **filename inventory**. It is not pixel proof. On-disk `artifacts/world_*` PNGs are not claimed to match camp `(9950, 2400)` this session (RESEARCH A2 / Pitfall 9). Do not re-run GPU.
+
+TIME-stable class (byte-identical across identical runs; use for tree/landmark-shape claims): `central_road_shoulder`, `city_barrier` day/night, `city_building_detail`, `city_density`, `city_salvage`, `east_village`, `forest_density`, `forest_log`, `forest_rock`, `local_car_wreck`, `mall`.
+
+Tree/canopy claims: `forest_density` only.
+
+Camp frames are TIME-noisy (shader `TIME`, resource pulse, `AmberLight` / aura). Between identical runs they can move up to 5912 pixels by day and 21799 at night. They are not silhouette evidence.
+
+Do not treat leftover look-ats `CityScrapPile_00` (`CITY_SALVAGE_POSITION`) or `CityVehicleWreck_02` (`CITY_BARRIER_POSITION`) as 30s-loop cameras. Those are density/detail leftovers, not loop-proof.
+
+| Intent (script const) | Path |
+|-----------------------|------|
+| Overview | `artifacts/world_overview_validation.png` |
+| Kaupunki district | `artifacts/world_city_validation.png` |
+| Ostari district | `artifacts/world_mall_validation.png` |
+| Camp | `artifacts/world_forest_camp_validation.png` |
+| Camp composition | `artifacts/world_forest_camp_composition_validation.png` |
+| City salvage (`CityScrapPile_00`) | `artifacts/world_city_salvage_validation.png` |
+| City barrier (`CityVehicleWreck_02`) | `artifacts/world_city_barrier_validation.png` |
+| Forest rock | `artifacts/world_forest_rock_validation.png` |
+| Forest log | `artifacts/world_forest_log_validation.png` |
+| City building detail | `artifacts/world_city_building_detail_validation.png` |
+| Long Ostari shell | `artifacts/world_mall_long_shell_validation.png` |
+| West village | `artifacts/world_west_village_validation.png` |
+| East village | `artifacts/world_east_village_validation.png` |
+| Local car wreck | `artifacts/world_local_car_wreck_validation.png` |
+| City–forest transition | `artifacts/world_city_forest_transition_validation.png` |
+| Central road shoulder | `artifacts/world_central_road_shoulder_validation.png` |
+| City density | `artifacts/world_city_density_validation.png` |
+| Forest density | `artifacts/world_forest_density_validation.png` |
+| Wilderness density | `artifacts/world_wilderness_density_validation.png` |
+| Wilderness ecology gameplay | `artifacts/world_wilderness_ecology_gameplay_validation.png` |
+| Night camp | `artifacts/world_forest_camp_night_validation.png` |
+| Night camp composition | `artifacts/world_forest_camp_composition_night_validation.png` |
+| Night city barrier | `artifacts/world_city_barrier_night_validation.png` |
+| Night west village | `artifacts/world_west_village_night_validation.png` |
+| Night wilderness ecology | `artifacts/world_wilderness_ecology_gameplay_night_validation.png` |
+
+Twenty-five paths. Filename inventory is not pixel proof.
 
 ## Foundation drift
 
-Task 2 tables stale `docs/WORLD_MAP_FOUNDATION.md` claims (576 / 23 / 150) against live 640 / 25 / 169.
+`docs/WORLD_MAP_FOUNDATION.md` tracks the *implemented* world and lagged live constants. Do not rewrite that file in this plan. Planners must stop copying the left column.
+
+| Claim in `WORLD_MAP_FOUNDATION.md` | Live |
+|------------------------------------|------|
+| Ambient scenery 576 / forest 172 | `TOTAL_SCENERY_COUNT` 640 / forest zone 236 |
+| Captures 23 | `capture_count` 25 |
+| `WORLD MAP VALIDATION OK (150)` | 169 (TESTING.md / current world-map gate print) |
+
+Decor 1100 (300+160+220+420) still matches live. Camp `(9950, 2400)` still matches live. Extents 14×14 / ±14,336 still match live. The drift that bites is scenery, capture count, and gate check count.
 
 ## What the contract must invent
 
-Task 2 lists dirt spur (D-02), Metsä threat weenie, teaching salvage pocket as a place, and three-grade visual look — without GDScript coordinates.
+This census does not specify GDScript coordinates for the target. Sibling `docs/WORLD_MAP_REDESIGN_CONTRACT.md` (plan 02) names the anatomy.
+
+1. **Dirt spur (D-02).** Live map has seclusion, not a spur polyline. Contract adds a dirt exit that meets asphalt. Still not a junction camp (D-01).
+2. **Metsä threat weenie.** No named forest landmark exists today. D-12 makes it the 30s-loop named-landmark beat.
+3. **Teaching salvage pocket as a place.** Today: three teaching offsets plus 84-sector oatmeal. Contract names a nearby Metsä pocket (not Ostari; Ostari is the 10-minute commute).
+4. **Three-grade visual look.** Code today has two `dirt_flags` values (four asphalt, four dirt; perimeter is dirt like villages). D-20 wants asphalt spine / dirt branch / wilderness perimeter readable at 1×. Third look is Phase 3 (ROAD-01), not a Phase 1 enum.
+
+Also later, not this file: five shout nouns, exclusion volumes, named capture cameras (spec only). Honest coverage: filename inventory is not pixel proof.
