@@ -69,19 +69,53 @@ Fifteen of fifteen. No miss. This plan does not rewrite the contract.
 
 ## Live-constant table versus RESEARCH census
 
-Stub — Task 2 fills this table. Rows required: `GRID_SIZE` 14, `PLAYABLE_HALF_EXTENT` 14336.0, `STARTING_CAMP_POSITION` (9950, 2400), `WORLD_BUILD_SEED` 0xB35E7E, `TOTAL_SCENERY_COUNT` 640, `ZONE_SCENERY_COUNTS` forest index 4 = 236, `RESOURCE_COUNT` 87, `LAYOUT_VERSION` 2, `capture_count` 25, `MAXIMUM_UNHOSTABLE_POCKETS` 1, `OstariSouthShell` at (4850, -3150), wilderness pocket 2 `Vector4(2600, -2200, 700, 620)`, `forbidden_pending_human_visual_veto`, no camp spur today, `WorldBackgroundDecor2D.CAMP_POSITION` duplicate. Do not copy foundation 576/23/150 as live.
+Read live `.gd` this session. Do not copy foundation 576 / forest 172 / captures 23 / gate 150 as live. Every Matches-RESEARCH cell is yes because the audit quote and RESEARCH census agree with the `.gd` value.
+
+| Constant | Live value in `.gd` | Quoted in WORLD_MAP_AUDIT.md | Matches RESEARCH |
+|----------|---------------------|------------------------------|------------------|
+| `GRID_SIZE` | 14 (`src/world/world_map_2d.gd`) | yes — Extents table `BesprenWorldMap2D.GRID_SIZE` 14 | yes |
+| `PLAYABLE_HALF_EXTENT` | 14336.0 (`src/world/world_map_2d.gd`) | yes — Extents table 14336.0 | yes |
+| `STARTING_CAMP_POSITION` | `Vector2(9950.0, 2400.0)` (`src/world/world_map_2d.gd`) | yes — `(9950, 2400)` | yes |
+| `WORLD_BUILD_SEED` | `0xB35E7E` (`src/world/world_map_2d.gd`) | yes — freeze; this plan does not change the `.gd` (D-28) | yes |
+| `TOTAL_SCENERY_COUNT` | 640 (`src/world/world_ambient_scenery_2d.gd`) | yes — Density tables | yes |
+| `ZONE_SCENERY_COUNTS` forest index 4 | 236 (`[96, 72, 48, 48, 236, 92, 48]`) | yes — Forest zone (index 4) 236 | yes |
+| `RESOURCE_COUNT` | 87 (`src/world/resource_scatter_2d.gd`) | yes — Density tables | yes |
+| `LAYOUT_VERSION` | 2 (`src/world/resource_scatter_2d.gd`) | yes — freeze; do not bump (D-28) | yes |
+| `capture_count` | 25 (`tests/world_render_validation.gd`) | yes — Capture inventory | yes |
+| `MAXIMUM_UNHOSTABLE_POCKETS` | 1 (`tests/existing_wild_atlas_context_validation.gd`) | yes — Pocket versus obstacle overlaps | yes |
+| `OstariSouthShell` | `(4850.0, -3150.0)` size `(6400.0, 1800.0)` (`src/world/world_map_2d.gd` `_build_mall`) | yes — Pocket versus obstacle overlaps | yes |
+| wilderness pocket 2 | `Vector4(2600.0, -2200.0, 700.0, 620.0)` index 2 of 10 (`src/world/world_ambient_scenery_2d.gd` `WILDERNESS_POCKETS`) | yes — `Vector4(2600, -2200, 700, 620)` | yes |
+| `forbidden_pending_human_visual_veto` | `runtime_promotion` string in `tests/existing_wild_atlas_context_validation.gd` | yes — 1× unreadables | yes |
+| no camp spur today | eight polylines in `_build_road_network`; `dirt_flags` `[0,0,0,0,1,1,1,1]`; none terminate at `(9950, 2400)` | yes — Eight routes and missing spur | yes |
+| `WorldBackgroundDecor2D.CAMP_POSITION` | `Vector2(9950.0, 2400.0)` duplicate literal (`src/world/world_background_decor_2d.gd`) | yes — Density tables, Phase 2 grep trap | yes — listed on contract Phase 2 consumer table |
+
+Foundation drift (audit only; not live): scenery 576 / forest 172 / captures 23 / `WORLD MAP VALIDATION OK (150)`. Live is 640 / 236 / 25 / 169. This proof does not treat the left column as census.
 
 ## Git path filter
 
-Stub — Task 2 runs and pastes:
+Commands run 2026-09-19 while writing this section. Expected empty on both path filters. Dirty `src/world/` would fail CONT-01.
 
-- `git diff --name-only -- src/world/` (expected empty)
-- `git diff --name-only -- tests/world_render_validation.gd tests/world_render_validation.tscn` (expected empty)
-- Confirm `LAYOUT_VERSION` still 2 in `src/world/resource_scatter_2d.gd`
-- Confirm `WORLD_BUILD_SEED` still `0xB35E7E` in `src/world/world_map_2d.gd`
-- Confirm `TOTAL_SCENERY_COUNT` still 640 in `src/world/world_ambient_scenery_2d.gd`
+```text
+git diff --name-only -- src/world/
+```
 
-Allowed this phase: `docs/*.md` and `.planning/phases/01-map-audit-redesign-contract/**`. Forbidden even as comments: `world_map_2d.gd`, `world_road_network_2d.gd`, `world_obstacle_2d.gd`, `resource_scatter_2d.gd`, camera lists in world-render validation.
+Output: empty (no names).
+
+```text
+git diff --name-only -- tests/world_render_validation.gd tests/world_render_validation.tscn
+```
+
+Output: empty (no names). Cameras specified, not implemented (D-27).
+
+Read confirmations (not edited):
+
+- `LAYOUT_VERSION` still `2` in `src/world/resource_scatter_2d.gd` (`const LAYOUT_VERSION: int = 2`)
+- `WORLD_BUILD_SEED` still `0xB35E7E` in `src/world/world_map_2d.gd` (`const WORLD_BUILD_SEED: int = 0xB35E7E`)
+- `TOTAL_SCENERY_COUNT` still `640` in `src/world/world_ambient_scenery_2d.gd` (`const TOTAL_SCENERY_COUNT: int = 640`)
+
+Allowed paths this phase: `docs/*.md` and `.planning/phases/01-map-audit-redesign-contract/**`.
+
+Forbidden even as comments: `world_map_2d.gd`, `world_road_network_2d.gd`, `world_obstacle_2d.gd`, `resource_scatter_2d.gd`, camera lists in world-render validation. Phase 1 proof file does not edit those paths.
 
 ## Decision coverage D-01 through D-28
 
@@ -146,4 +180,4 @@ Shout-noun count is five (D-11). East has no shout noun. The 30s named landmark 
 
 Desktop/headless success does not certify Android. Phase 1 remaining proof is this file plus empty `src/world/` diff. Not GPU. Not device.
 
-Do not run Godot. Do not rewrite `docs/WORLD_MAP_FOUNDATION.md`. Do not instantiate `BesprenWorldMap2D`. Do not create `tests/map_contract_validation.gd`. Task 2 still owes the live-constant table and the pasted git path-filter output.
+Do not run Godot. Do not rewrite `docs/WORLD_MAP_FOUNDATION.md`. Do not instantiate `BesprenWorldMap2D`. Do not create `tests/map_contract_validation.gd`. Live-constant table and git path filter are filled; CONT-01 is proven.
