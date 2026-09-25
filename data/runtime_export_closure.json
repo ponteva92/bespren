@@ -154,6 +154,14 @@
       "type": "Script"
     },
     {
+      "path": "res://src/visual/ground_fissure.gd",
+      "type": "Script"
+    },
+    {
+      "path": "res://src/visual/ground_rubble.gd",
+      "type": "Script"
+    },
+    {
       "path": "res://src/visual/blood_canvas.gd",
       "type": "Script"
     },

@@ -41,8 +41,11 @@ const EXPECTED_FRAME_COUNT: int = 8
 ## mentions it, so it was named in neither the closure nor the dependency
 ## scene and had no path into the package that did not depend on the exporter
 ## resolving a string. Every entry this constant has ever gained is the same
-## shape: a resource reached by name rather than by reference.
-const EXPECTED_EXPORT_RESOURCE_COUNT: int = 204
+## shape: a resource reached by name rather than by reference. Raised to 206
+## for `ground_fissure.gd` and `ground_rubble.gd`, the two static-only
+## `class_name` languages the world's crack and rubble draws now go through -
+## the `ground_shadow.gd` case exactly.
+const EXPECTED_EXPORT_RESOURCE_COUNT: int = 206
 ## Derived rather than authored beside it. The dependency scene retains every
 ## resource in the closure plus the closure manifest itself, so a second hand
 ## written number here could only ever drift away from the first one.
