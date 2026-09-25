@@ -602,31 +602,15 @@ func _draw_mall_berm(canvas: Node2D, lot: Rect2) -> void:
 				)
 
 
-## One broken piece of slab: a dark drop shadow, a darker broken side, and a lit
-## top facet. Six to seventeen screen pixels at the gameplay zoom, which is the
-## band where a heap reads as a heap rather than as noise or as a prop.
+## One broken piece of slab, in the shared [GroundRubble] language.
 func _draw_mall_chunk(canvas: Node2D, center: Vector2, size: float, salt: int) -> void:
-	var top: PackedVector2Array = _mall_blob(center, size, 0.72, salt)
-	var shadow_offset: Vector2 = MALL_FOUNDATION_SHADOW_OFFSET.normalized() * size * 0.55
-	var side_offset: Vector2 = Vector2(0.0, size * 0.34)
-	var shadow: PackedVector2Array = PackedVector2Array()
-	var side: PackedVector2Array = PackedVector2Array()
-	for point: Vector2 in top:
-		shadow.append(point + shadow_offset)
-		side.append(point + side_offset)
-	canvas.draw_colored_polygon(
-		shadow,
-		Color(
-			GROUND_SHADOW_COLOR.r,
-			GROUND_SHADOW_COLOR.g,
-			GROUND_SHADOW_COLOR.b,
-			MALL_FOUNDATION_SHADOW_ALPHA * 2.6
-		)
-	)
-	canvas.draw_colored_polygon(side, MALL_RUBBLE_SIDE_COLOR)
-	canvas.draw_colored_polygon(
-		top,
-		MALL_RUBBLE_TOP_COLORS[int(_unit_noise(salt + 7) * 97.0) % MALL_RUBBLE_TOP_COLORS.size()]
+	GroundRubble.draw_chunk(
+		canvas,
+		center,
+		size,
+		float(salt),
+		MALL_RUBBLE_TOP_COLORS[int(_unit_noise(salt + 7) * 97.0) % MALL_RUBBLE_TOP_COLORS.size()],
+		MALL_RUBBLE_SIDE_COLOR
 	)
 
 
@@ -666,16 +650,8 @@ func _mall_point_in(area: Rect2, salt: int) -> Vector2:
 	)
 
 
-## An irregular closed outline around `center`: seven vertices at their own reach,
-## squashed on y so a flat piece reads as lying on the ground.
 func _mall_blob(center: Vector2, radius: float, squash: float, salt: int) -> PackedVector2Array:
-	var points: PackedVector2Array = PackedVector2Array()
-	var spin: float = _unit_noise(salt + 11) * TAU
-	for vertex: int in range(7):
-		var angle: float = spin + TAU * float(vertex) / 7.0
-		var reach: float = radius * (0.62 + _unit_noise(salt + 13 + vertex) * 0.38)
-		points.append(center + Vector2(cos(angle) * reach, sin(angle) * reach * squash))
-	return points
+	return GroundRubble.outline(center, radius, squash, float(salt))
 
 
 func _draw_city_roof_variant(roof_rect: Rect2, variant: int) -> void:
@@ -941,7 +917,7 @@ func _draw_cracks(count: int, color: Color) -> void:
 		var start: Vector2 = _detail_position(crack_index + 180, half_size * 0.78)
 		var direction: Vector2 = Vector2.from_angle(_unit_noise(crack_index + 210) * TAU)
 		var end: Vector2 = start + direction * (45.0 + _unit_noise(crack_index + 230) * 120.0)
-		draw_line(start, end, color, 9.0)
+		GroundFissure.draw_segment(self, start, end, float(stable_seed % 997) + crack_index, 1.4, color)
 
 
 func _install_imported_visuals() -> void:

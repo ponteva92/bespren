@@ -6,7 +6,6 @@ extends Node2D
 const ASPHALT_OUTER_COLOR: Color = Color("1d2523")
 const ASPHALT_INNER_COLOR: Color = Color("363d3b")
 const ASPHALT_EDGE_COLOR: Color = Color(0.48, 0.52, 0.48, 0.26)
-const ASPHALT_CRACK_COLOR: Color = Color(0.055, 0.075, 0.070, 0.72)
 const ASPHALT_WHEEL_PATH_COLOR: Color = Color(0.300, 0.335, 0.325, 0.30)
 const ASPHALT_AGGREGATE_LIGHT_COLOR: Color = Color(0.315, 0.345, 0.335, 0.34)
 const ASPHALT_AGGREGATE_DARK_COLOR: Color = Color(0.125, 0.150, 0.145, 0.34)
@@ -490,21 +489,30 @@ func _draw_surface_breaks(is_dirt: bool) -> void:
 			+ perpendicular * lateral * _inner_width
 		)
 		var half_span: float = lerpf(26.0, 74.0, variation)
-		var surface_color: Color = RUT_COLOR if is_dirt else ASPHALT_CRACK_COLOR
-		draw_line(
-			center - perpendicular * half_span,
-			center + perpendicular * half_span,
-			surface_color,
-			7.0 if is_dirt else 5.0,
-			false
-		)
-		var branch_direction: Vector2 = (perpendicular + direction * 0.52).normalized()
-		draw_line(
-			center,
-			center + branch_direction * half_span * 0.66,
-			surface_color,
-			5.0 if is_dirt else 3.5,
-			false
+		# A bar across the bed with a branch off its centre was the silhouette of
+		# a twig standing on the carriageway at the gameplay zoom. A frost break
+		# wanders across the lane and forks near one tip, so it is drawn that way
+		# through the shared fissure.
+		var surface_color: Color = RUT_COLOR if is_dirt else GroundFissure.CORE_COLOR
+		var salt: float = float(mark_index) * 1.618 + (7.0 if is_dirt else 0.0)
+		var course: PackedVector2Array = PackedVector2Array()
+		for step: int in range(4):
+			var t: float = float(step) / 3.0
+			var wander: float = 0.0
+			if step > 0 and step < 3:
+				wander = (_stable_unit(mark_index * 29 + step) - 0.5) * 2.0 * minf(14.0, half_span * 0.2)
+			course.append(
+				center + perpendicular * lerpf(-half_span, half_span, t) + direction * wander
+			)
+		GroundFissure.draw_path(self, course, salt, 1.1 if is_dirt else 0.85, surface_color)
+		var fork_sign: float = 1.0 if _stable_unit(mark_index * 31 + 4) < 0.5 else -1.0
+		GroundFissure.draw_segment(
+			self,
+			course[2],
+			center + perpendicular * half_span * 0.94 + direction * fork_sign * half_span * 0.36,
+			salt + 9.0,
+			0.8 if is_dirt else 0.6,
+			surface_color
 		)
 		mark_index += 1
 		mark_distance = (float(mark_index) + 0.58) * spacing
@@ -710,7 +718,6 @@ func _draw_longitudinal_cracks() -> void:
 	var chunk_start: float = _authored_segment_distance
 	var chunk_finish: float = chunk_start + length
 	var crack_index: int = floori(chunk_start / LONGITUDINAL_CRACK_SPACING)
-	var strokes: PackedVector2Array = PackedVector2Array()
 	while float(crack_index) * LONGITUDINAL_CRACK_SPACING < chunk_finish:
 		var crack_distance: float = float(crack_index) * LONGITUDINAL_CRACK_SPACING
 		if crack_distance >= chunk_start:
@@ -721,20 +728,20 @@ func _draw_longitudinal_cracks() -> void:
 			var along: float = clampf(
 				crack_distance - chunk_start, 0.0, maxf(0.0, length - run)
 			)
-			var previous: Vector2 = _start + direction * along + perpendicular * lateral
+			var course: PackedVector2Array = PackedVector2Array([
+				_start + direction * along + perpendicular * lateral
+			])
 			for step: int in range(1, 5):
 				var wander: float = (_stable_pair(crack_index, 59 + step) - 0.5) * 46.0
-				var next_point: Vector2 = (
+				course.push_back(
 					_start
 					+ direction * (along + run * float(step) * 0.25)
 					+ perpendicular * (lateral + wander)
 				)
-				strokes.push_back(previous)
-				strokes.push_back(next_point)
-				previous = next_point
+			# The authored wander stays the crack's course; the fissure adds the
+			# fine jag, the taper to two tips, and the lit lip.
+			GroundFissure.draw_path(self, course, float(crack_index) * 2.414, 0.7)
 		crack_index += 1
-	if not strokes.is_empty():
-		draw_multiline(strokes, ASPHALT_CRACK_COLOR, 4.0, false)
 
 
 func _draw_shoulder_grit(is_dirt: bool) -> void:

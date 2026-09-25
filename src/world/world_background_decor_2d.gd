@@ -18,9 +18,9 @@ const PLACEMENT_ATTEMPTS: int = 96
 ## ownership, nor the seeded decoration stream is exposed or mutable here.
 const RUBBLE_VISUAL_RADIUS_MULTIPLIER: float = 1.2
 const RUBBLE_VISUAL_RADIUS_PADDING: float = 2.0
+## Padding around a crack's courses. It has to cover the fissure's own reach
+## off its course - jag, lip and half-width - which the class publishes.
 const CRACK_VISUAL_RADIUS: float = 12.0
-const CRACK_BRANCH_RATIO: float = 0.56
-const CRACK_BRANCH_LENGTH: float = 85.0
 const MOSS_VISUAL_RADIUS_PADDING: float = 6.0
 const PROP_VISUAL_RADIUS_MULTIPLIER: float = 1.8
 const PROP_VISUAL_RADIUS_PADDING: float = 8.0
@@ -296,21 +296,20 @@ func get_crack_ends() -> PackedVector2Array:
 
 
 func get_crack_visual_envelopes() -> Array[Rect2]:
-	## Each envelope includes the main stroke, its deterministic branch, and the
-	## 12px stroke half-width.  Returning copies keeps visual review code from
-	## reaching into this seeded decoration stream.
+	## Each envelope is the box over every course the chunk draws for that crack -
+	## the main fracture and its forks, from the one builder both sides share -
+	## grown by `CRACK_VISUAL_RADIUS`. Returning copies keeps visual review code
+	## from reaching into this seeded decoration stream.
 	var envelopes: Array[Rect2] = []
 	for crack_index: int in range(_crack_starts.size()):
 		var crack_start: Vector2 = _crack_starts[crack_index]
 		var crack_end: Vector2 = _crack_ends[crack_index]
 		var envelope: Rect2 = Rect2(crack_start, Vector2.ZERO).expand(crack_end)
-		var displacement: Vector2 = crack_end - crack_start
-		if not displacement.is_zero_approx():
-			var branch_end: Vector2 = (
-				crack_start.lerp(crack_end, CRACK_BRANCH_RATIO)
-				+ displacement.normalized().orthogonal() * CRACK_BRANCH_LENGTH
-			)
-			envelope = envelope.expand(branch_end)
+		for course: PackedVector2Array in WorldBackgroundDecorChunk2D.build_crack_courses(
+			crack_start, crack_end
+		):
+			for point: Vector2 in course:
+				envelope = envelope.expand(point)
 		envelopes.append(envelope.grow(CRACK_VISUAL_RADIUS))
 	return envelopes
 

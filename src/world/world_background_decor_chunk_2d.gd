@@ -53,10 +53,30 @@ const MOSS_RING_SCALES: Array[float] = [1.0, 0.88, 0.75, 0.62, 0.5, 0.38]
 ## Odd on purpose: thirteen points cannot align with the three-lobe or five-lobe
 ## term, so the outline never resolves into a polygon the eye can count.
 const ORGANIC_OUTLINE_VERTICES: int = 13
-const CRACK_COLOR: Color = Color(0.025, 0.035, 0.033, 0.72)
-const CRACK_BRANCH_COLOR: Color = Color(0.025, 0.035, 0.033, 0.62)
-const RUBBLE_WOOD_COLOR: Color = Color(0.28, 0.22, 0.17, 0.7)
-const RUBBLE_METAL_COLOR: Color = Color(0.24, 0.28, 0.27, 0.68)
+## Crack geometry for [method build_crack_courses]. Four legs whose interior
+## vertices wander up to 8 percent of the crack's length, capped at 18 units
+## (seven screen pixels at the gameplay zoom); a fork leaves the last interior
+## vertex for a tip at 0.92 of the length, up to 26 units off the course.
+const CRACK_LEGS: int = 4
+const CRACK_MEANDER_SHARE: float = 0.08
+const CRACK_MEANDER_MAX: float = 18.0
+const CRACK_FORK_TIP: float = 0.92
+const CRACK_FORK_REACH: float = 26.0
+const CRACK_SPUR_MIN_LENGTH: float = 180.0
+## Rubble draws as a small heap through [GroundRubble]: one piece at 0.62 of the
+## authored size and two or three satellites within 0.55 of it at up to 0.32. The
+## farthest pixel is 0.55 + 0.32 x [constant GroundRubble.MAX_REACH] = 1.05 of the
+## size, inside the 1.2 x size + 2 envelope [WorldBackgroundDecor2D] publishes.
+## The old single triangles were translucent; these are opaque and held near the
+## ground's own value, timber warm and metal cool, so a heap is texture and not
+## a destination.
+const RUBBLE_WOOD_TOP: Color = Color(0.300, 0.228, 0.160, 1.0)
+const RUBBLE_WOOD_SIDE: Color = Color(0.128, 0.094, 0.068, 1.0)
+const RUBBLE_METAL_TOP: Color = Color(0.268, 0.296, 0.283, 1.0)
+const RUBBLE_METAL_SIDE: Color = Color(0.118, 0.134, 0.128, 1.0)
+const RUBBLE_MAIN_SHARE: float = 0.62
+const RUBBLE_SATELLITE_REACH: float = 0.55
+const RUBBLE_SATELLITE_SHARE: float = 0.32
 ## Background decor holds a 55-70 composite luma band over the world's own ~53
 ## floor: present as texture, never as a destination.
 ##
@@ -155,11 +175,9 @@ func add_crack(world_start: Vector2, world_end: Vector2) -> void:
 	_crack_ends.append(world_end - position)
 	_include_world_point(world_start, 12.0)
 	_include_world_point(world_end, 12.0)
-	var branch_point: Vector2 = world_start.lerp(world_end, 0.56)
-	var displacement: Vector2 = world_end - world_start
-	if not displacement.is_zero_approx():
-		var branch_end: Vector2 = branch_point + displacement.normalized().orthogonal() * 85.0
-		_include_world_point(branch_end, 12.0)
+	for course: PackedVector2Array in build_crack_courses(world_start, world_end):
+		for point: Vector2 in course:
+			_include_world_point(point, 12.0)
 
 
 func add_moss(world_position: Vector2, size: float) -> void:
@@ -319,6 +337,91 @@ func _draw_shrub(seed_source: Vector2, radius: float) -> void:
 	)
 
 
+## A crack used to be a straight 18-unit near-black stroke with an 85-unit
+## branch straight out of its side at 0.56 of its length. At the gameplay zoom
+## that is a seven-pixel bar forming a T, which is the silhouette of a dropped
+## stick, and the tour read every one of them that way. A fracture meanders,
+## narrows to its tips, and forks near an end rather than sprouting from its
+## middle, so the course is now built here and drawn through [GroundFissure].
+##
+## It is static and world-space because two callers need the same geometry: this
+## chunk draws it, and [method WorldBackgroundDecor2D.get_crack_visual_envelopes]
+## publishes a box around it for the sibling presentation gates. Deriving both
+## from one function is what keeps that envelope honest when the shape changes.
+## Returns the main course first, then its forks.
+static func build_crack_courses(world_start: Vector2, world_end: Vector2) -> Array[PackedVector2Array]:
+	var courses: Array[PackedVector2Array] = []
+	var displacement: Vector2 = world_end - world_start
+	var length: float = displacement.length()
+	if length <= 0.0:
+		return courses
+	var side: Vector2 = displacement.normalized().orthogonal()
+	var salt: float = world_start.x * 0.0131 + world_start.y * 0.0071
+	var meander: float = minf(CRACK_MEANDER_MAX, length * CRACK_MEANDER_SHARE)
+	var main: PackedVector2Array = PackedVector2Array([world_start])
+	for leg: int in range(1, CRACK_LEGS):
+		var t: float = float(leg) / float(CRACK_LEGS)
+		main.append(
+			world_start.lerp(world_end, t)
+			+ side * (_patch_noise(world_start, salt + float(leg)) * 2.0 - 1.0) * meander
+		)
+	main.append(world_end)
+	courses.append(main)
+	# A fork near the far tip, on either side.
+	var fork_side: float = 1.0 if _patch_noise(world_start, salt + 11.0) < 0.5 else -1.0
+	var fork_reach: float = lerpf(0.6, 1.0, _patch_noise(world_start, salt + 12.0)) * CRACK_FORK_REACH
+	courses.append(PackedVector2Array([
+		main[CRACK_LEGS - 1],
+		world_start.lerp(world_end, CRACK_FORK_TIP) + side * fork_side * fork_reach,
+	]))
+	# Longer cracks split at the near tip too, to the other side.
+	if length >= CRACK_SPUR_MIN_LENGTH:
+		courses.append(PackedVector2Array([
+			main[1],
+			world_start.lerp(world_end, 1.0 - CRACK_FORK_TIP) - side * fork_side * fork_reach * 0.7,
+		]))
+	return courses
+
+
+func _draw_crack(crack_start: Vector2, crack_end: Vector2) -> void:
+	var courses: Array[PackedVector2Array] = build_crack_courses(
+		crack_start + position, crack_end + position
+	)
+	var world_start: Vector2 = crack_start + position
+	var salt: float = world_start.x * 0.0131 + world_start.y * 0.0071
+	for course_index: int in range(courses.size()):
+		var local_course: PackedVector2Array = PackedVector2Array()
+		for point: Vector2 in courses[course_index]:
+			local_course.append(point - position)
+		GroundFissure.draw_path(
+			self,
+			local_course,
+			salt + float(course_index) * 17.0,
+			1.0 if course_index == 0 else 0.62
+		)
+
+
+func _draw_rubble_heap(center: Vector2, size: float, spin: float, timber: bool) -> void:
+	var seed_source: Vector2 = center + position
+	var salt: float = seed_source.x * 0.0173 + seed_source.y * 0.0119
+	var top: Color = RUBBLE_WOOD_TOP if timber else RUBBLE_METAL_TOP
+	var side: Color = RUBBLE_WOOD_SIDE if timber else RUBBLE_METAL_SIDE
+	var satellites: int = 2 + int(_patch_noise(seed_source, 5.1) * 2.0)
+	# Satellites first, so the main piece sits on top of their edges.
+	for satellite: int in range(satellites):
+		var angle: float = spin + TAU * float(satellite) / float(satellites) + _patch_noise(seed_source, 6.0 + satellite) * 0.9
+		var reach: float = size * RUBBLE_SATELLITE_REACH * (0.6 + _patch_noise(seed_source, 9.0 + satellite) * 0.4)
+		GroundRubble.draw_chunk(
+			self,
+			center + Vector2(cos(angle), sin(angle) * GroundRubble.SQUASH) * reach,
+			size * RUBBLE_SATELLITE_SHARE * (0.55 + _patch_noise(seed_source, 12.0 + satellite) * 0.45),
+			salt + float(satellite) * 3.1,
+			top.darkened(0.08 * float(satellite % 2)),
+			side
+		)
+	GroundRubble.draw_chunk(self, center, size * RUBBLE_MAIN_SHARE, salt, top, side)
+
+
 func get_decoration_count() -> int:
 	return (
 		_rubble_positions.size()
@@ -337,34 +440,15 @@ func _draw() -> void:
 		_draw_moss_patch(_moss_positions[moss_index], _moss_sizes[moss_index])
 
 	for crack_index: int in range(_crack_starts.size()):
-		var crack_start: Vector2 = _crack_starts[crack_index]
-		var crack_end: Vector2 = _crack_ends[crack_index]
-		draw_line(crack_start, crack_end, CRACK_COLOR, 18.0)
-		var displacement: Vector2 = crack_end - crack_start
-		if displacement.is_zero_approx():
-			continue
-		var branch_point: Vector2 = crack_start.lerp(crack_end, 0.56)
-		var branch_direction: Vector2 = displacement.normalized().orthogonal()
-		draw_line(
-			branch_point,
-			branch_point + branch_direction * 85.0,
-			CRACK_BRANCH_COLOR,
-			11.0
-		)
+		_draw_crack(_crack_starts[crack_index], _crack_ends[crack_index])
 
 	for rubble_index: int in range(_rubble_positions.size()):
-		var rubble_position: Vector2 = _rubble_positions[rubble_index]
-		var rubble_size: float = _rubble_sizes[rubble_index]
-		var rubble_rotation: float = _rubble_rotations[rubble_index]
-		var rubble_points: PackedVector2Array = PackedVector2Array([
-			rubble_position + Vector2(-rubble_size, rubble_size * 0.48).rotated(rubble_rotation),
-			rubble_position + Vector2(rubble_size * 0.82, rubble_size * 0.32).rotated(rubble_rotation),
-			rubble_position + Vector2(rubble_size * 0.18, -rubble_size * 0.76).rotated(rubble_rotation),
-		])
-		var rubble_color: Color = (
-			RUBBLE_WOOD_COLOR if _rubble_indices[rubble_index] % 3 == 0 else RUBBLE_METAL_COLOR
+		_draw_rubble_heap(
+			_rubble_positions[rubble_index],
+			_rubble_sizes[rubble_index],
+			_rubble_rotations[rubble_index],
+			_rubble_indices[rubble_index] % 3 == 0
 		)
-		draw_colored_polygon(rubble_points, rubble_color)
 
 	# Contacts are one pass ahead of the props rather than one call inside each.
 	# `GroundShadow.draw_ellipse` sets and clears the canvas transform, so it
