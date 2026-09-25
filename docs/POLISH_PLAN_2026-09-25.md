@@ -48,7 +48,7 @@ Godot runs (and the Godot MCP now resolves it through `/usr/bin/godot`). Blender
 
 | ID | Item | Owner | Proof |
 |---|---|---|---|
-| P0 | Gameplay-zoom tour capture gate, added to the runner | `tests/gameplay_tour_render_validation` | `GAMEPLAY TOUR RENDER OK \| zoom=0.38 \| captures=20` |
+| P0 | Gameplay-zoom tour capture gate, added to the runner | `tests/gameplay_tour_render_validation` | `GAMEPLAY TOUR RENDER OK \| zoom=0.38 \| captures=20` (25 once the pass added stops) |
 | P1 | Ostari foundation reads as a broken concrete apron on the ground, not a framed panel: no hard frame, no inner stroke, value within the urban ground band, weathered edge and rubble | `WorldObstacle2D._draw_mall_foundation` | tour `mall_shell_edge`, `mall_pylon`; foundation-to-ground luma ratio |
 | P2 | Ground cracks become tapered, jagged, low-contrast fissures with a lit lip, sized in screen pixels at 0.38; positions and RNG draws unchanged | `WorldBackgroundDecorChunk2D` crack pass | tour road/mall frames; decor counts unchanged in `world_map_validation` |
 | P3 | Metsä reads as forest: canopy-wall rim around the camp bowl and denser visual-only canopy in the forest belt; camp ground reads as a trodden clearing | `WorldAmbientScenery2D` / camp clearing ground layer | tour `camp_*`, `forest_interior`; occupancy; `forest_density` world frame |
@@ -67,4 +67,51 @@ FIR-01 fir canopy mass (two-clone clump or a denser CC0 conifer), TINT-01 pine r
 
 ## 5. Record
 
-Filled in as each item lands.
+Everything in sections 2 and 3 shipped. Nothing in section 4 did, because the hosts stayed closed. All of it is on `claude/fervent-brown-73kgeq`.
+
+### 5.1 What shipped
+
+| ID | Commit | What changed at 1× | Gate evidence |
+|---|---|---|---|
+| P0 | `fff172b` | New `gameplay_tour_render_validation`: stops at exactly `zoom = 0.38`, a baked Heikki at a fixed offset for scale, no HUD, stops resolved from live nodes. Grew from 20 to 25 stops as the pass added places (camp spur, east rest plot, east hamlet, Metsä near the camp, forest edge track). | `GAMEPLAY TOUR RENDER OK \| zoom=0.38 \| captures=25`, in the runner |
+| P1 | `05fc122` | The Ostari footprint is a lot, not a panel. It is drawn on a behind-parent child that wears the road grain shader pointed at the terrain atlas's concrete cell, so it has the urban ground's slab structure and follows the night grade. It is broken up by expansion joints, stains, weeds at seam crossings, fallen beams and rubble mounds, and a three-row berm of broken chunks straddles the collision edge. No frame, no inner stroke. | local environment 48 (+1: every Ostari footprint draws on that child with that material) |
+| P2 | `3dc19a7`, `c5d28fd` | Two shared languages in the `GroundShadow` pattern. `GroundFissure` is a groove that meanders, tapers to hairline tips and has a lit lip down-right of the core (a stick's shadow would fall the other way). `GroundRubble` is an irregular piece with a drop shadow, a darker broken side and a lit top. Decor cracks, the road's transverse and longitudinal cracks and the procedural-building fallback all draw through `GroundFissure`. Decor cracks meander in four legs and fork near a tip. Decor rubble is a heap of one piece plus two or three satellites. `build_crack_courses` is the one builder that both the chunk and the published envelopes read. | Placement, RNG draws, counts, collision and flow unchanged: world map 169, smoke 207 at the time. Closure 204 → 206 |
+| P3 | `895e376` | `WorldForestUnderstory2D` adds saplings, shrubs (the two dense firs cropped above the bole), ferns, stumps, moss rocks and deadfall at 70–330 units, one hashed candidate per 230-unit cell. It leaves an empty bowl inside 1,180 units of the camp, builds a wall out to 2,150, scales the forest fill by the biome mask and thins out in far wilderness. `WorldCampClearing2D` lays trodden earth and worn paths to each satellite. Both are visual-only, on their own seed streams, and configured after the canonical pipeline. | World map: 2,572 elements; 143 on the rim; forest gameplay frames average 7.8 understory subjects over 31 frames, none under 3; no overlap with any footprint or road verge; identical rebuild. Placement 62 ms |
+| P4 | `38b4669` | East Kylät is its own layout: a three-house hamlet west of its dirt road, a caretaker's house to the north-east, a three-pole line with a gap, and a walled grave plot east of the road. The plot has six wall runs, every one stopping 150 units short of its neighbour. `WorldGraveyard2D` draws rows of headstones and crosses over sunken mounds, some fallen or missing, with a path down the middle. | World map: 0 translated and 0 mirrored matches with the west; plot openings and interior walkable; 121 markers inside. Flow-mask pin and dressing positions re-pinned on purpose |
+| P5 | `5d1e50a` | `GameSettings` (typed, no autoload) stores four quarter-step scales (camera shake, damage flash, weather, glow pulse) in `user://settings.cfg`. An OPTIONS button on the StartMenu opens an opaque sheet with 44 × 44 steppers; zero reads OFF and each step saves immediately. `GameWorld` applies the scales to `WeatherOverlay` (damage wash plus a new `intensity_scale`), the local `CameraShake2D`, `CorePulseDriver.pulse_scale`, and a `bespren_pulse_amount` global shader uniform read by the toon outline, the aura and the scale glow. At zero a pulse holds at its own mean, so turning it off stops motion without dimming. | New `settings_lifecycle_validation` (35) measures each effect at zero rather than reading the property back. Start-menu layout 212, start-menu capture `captures=4` |
+| P6 | `5d1e50a` | Application-paused or focus-out releases every held touch and zeroes movement in all modes. Solo also pauses the tree and resumes on return. Leaving the world never leaves its own pause behind. | Same gate, lifecycle half |
+| Phase 2 | `f85a5eb`, `b45780d` | `res://data/world/world_composition.tres` (`WorldCompositionContract`) holds the camp seat and satellites, nine road routes with grades and names, biome paint, five shout nouns and thirteen pocket tables. `BesprenWorldMap2D` preloads it, validates it at build and paints from it. Every camp literal and pocket table now resolves through it. The contract's dirt spur (route 9, `camp_spur`) runs from the camp's open ring, 465 units from the refuge, to the east-west spine: 2,229 units, and the one road allowed inside the 1,600-unit seclusion ring. The clearing moved to the ground layer, under the roads, so the spur can be seen leaving it. | World map: composition consumed and internally consistent; no world script still authors a pocket table or the camp literal; spur checks. Refactor proven output-identical: stable captures byte-identical, flow and understory hashes held. Closure 212 |
+| Phase 3 | `dde2d55` | Three grades read apart. The perimeter track is a 230-unit bed (88 screen pixels, against dirt's 137 and the spine's 160) with a soft verge and a grass crown between two ruts. It keeps the dirt corridor for every clearance rule, so nothing seeded moves. Every shoulder is drawn before any bed, so junctions read as one surface, and paint lines and dashes stop inside it. Free ends taper over 300 units into a ragged, fading half-ellipse cap. | World map 226: three grades with bed widths stepping 420 / 360 / 230; 61 + 61 two-pass chunks; the spur's camp end is free and capped; the closed loop has no free ends; exactly five capped ends |
+
+### 5.2 Gates at the head of the pass
+
+Linux, lavapipe, `tools/ci/run_gates.sh`: **import clean, 22/22 headless, 6/6 ENet, 18/18 capture: 47/47.** Against the baseline: `settings_lifecycle_validation` (35) and `gameplay_tour_render_validation` (25 captures) are new. World map 169 → 226, local environment 47 → 48, start-menu layout 188 → 212, start-menu capture 3 → 4. The export closure is 204 → 212 resources, with 213 dependencies. Every other count is unchanged.
+
+### 5.3 Before and after at the gameplay zoom
+
+Occupancy is measured as in section 1.3. "Before" is the baseline tour at `db06241` and "after" is the tour at `dde2d55`. Occupancy counts detail, not quality: the camp and the road junction went *down* because the fixes removed noise (a mottled bowl, a shoulder band laid over the carriageway). Each verdict below is taken off the frame.
+
+| Stop | Before | After | Frame verdict |
+|---|---:|---:|---|
+| camp_day | 17.6 % | 13.4 % | The refuge sits on trodden earth, not uniform mud, with the rim wall entering at the top edge. The frame is quieter, which is the point of a bowl. Mean luma 52.0 → 56.4 |
+| camp_outskirts | 6.5 % | 9.6 % | The rim wall is in frame instead of bare mud |
+| forest_interior | 12.4 % | 34.6 % | Reads as forest. The stop moved from (-12000, 3000) to (-10500, 2400) to sit inside the belt rather than on its edge |
+| mall_shell_edge | 18.5 % | 20.1 % | A bermed concrete lot instead of a framed teal panel. Mean 58.3 → 65.7 |
+| mall_pylon | 35.4 % | 34.1 % | The framed teal case is gone. The bake stands on slab inside a rubble berm. The bake itself still reads as a brown box, which is Phase 6 set-piece work |
+| road_junction | 17.5 % | 12.9 % | One surface. The north-south shoulder no longer crosses the east-west bed |
+| perimeter_track | 12.8 % | 9.1 % | The narrow grassy ride reads as the lowest grade |
+| dirt_branch | 13.9 % | 13.2 % | Cracks read as grooves, not sticks |
+| east_village_yard | 12.3 % | 9.1 % | A different place from the west yard (hamlet, not a translated copy) |
+| west_village_yard | 14.2 % | 14.2 % | Unchanged, as intended |
+| city_block / city_choke | 5.3 / 6.8 % | 5.3 / 7.0 % | Unchanged. Kaupunki's emptiness is Phase 4 work |
+| wilderness | 4.8 % | 4.8 % | Unchanged. The far wilderness is left as "the quieter empty" on purpose |
+| east_rest_plot / east_hamlet / camp_spur / metsa_near_camp | – | 6.6 / 17.5 / 14.6 / 19.5 % | New stops |
+
+**Noise floor.** Run twice on the same code, 12 to 13 of the 25 world captures differ: the camp's light and aura, resource pulses, actor frames, the overview, the long Ostari shell, the west village, and sometimes wilderness density. Every "output-identical" claim above was judged against that floor, not against a single run.
+
+### 5.4 Not done, and why
+
+- **FIR-01, TINT-01, D-15 fence.** Rechecked at the end of the pass: `download.blender.org`, `api.polyhaven.com` and `dl.polyhaven.org` still return `403` on CONNECT from the environment proxy, and the Blender MCP has no Blender instance to attach to. The shrub half of the forest problem was covered without a bake by reusing the approved fir frames. The canopy mass, the pine hue and the fence silhouette still need Blender.
+- **LAN host pause.** A backgrounded host releases touches but does not pause, because pausing would stall its client's snapshots. A grace window is a protocol change, and it stays with device certification.
+- **Kaupunki and the far wilderness** are still sparse at 1×. That is Phase 4's district-job work, and the contract wants the wilderness quiet.
+

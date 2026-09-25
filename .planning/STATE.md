@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 2
-current_phase_name: Authored Skeleton
-status: verifying
-stopped_at: Completed 01-03-PLAN.md
-last_updated: "2026-09-25T14:00:00.000Z"
+current_phase: 4
+current_phase_name: District Jobs
+status: ready_to_plan
+stopped_at: Phases 2 and 3 complete (polish pass, executed directly)
+last_updated: "2026-09-25T20:00:00.000Z"
 last_activity: 2026-09-25
-last_activity_desc: Phase 1.1 (inserted) repo and gate hygiene complete; Phase 2 ready to plan
+last_activity_desc: Polish pass P0-P6 plus Phases 2 and 3 shipped on claude/fervent-brown-73kgeq; 47/47 gates green
 progress:
   total_phases: 9
-  completed_phases: 1
+  completed_phases: 3
   total_plans: 3
   completed_plans: 3
-  percent: 11
+  percent: 33
 ---
 
 # Project State
@@ -24,16 +24,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-18)
 
 **Core value:** At 480×270, the world reads as authored places with a visible salvage loop — never as generated scatter on a grid.
-**Current focus:** Phase 2 — Authored Skeleton
+**Current focus:** Phase 4 — District Jobs
 
 ## Current Position
 
-Phase: 2 — Authored Skeleton
+Phase: 4 — District Jobs
 Plan: Not started
-Status: Ready to plan (Phase 1 verified; Phase 1.1 hygiene complete)
-Last activity: 2026-09-25 — Phase 1.1 inserted and completed: export scene committed, CI added, legacy catalog archived, wave chip fixed, CLAUDE.md split
+Status: Ready to plan (Phases 2 and 3 complete; Kylät and Metsä have partial evidence from the polish pass)
+Last activity: 2026-09-25 — Polish pass (tour gate, Ostari lot, GroundFissure/GroundRubble, forest understory and camp clearing, East Kylät grave plot, accessibility settings and Solo background pause) plus Phase 2 (WorldCompositionContract, camp spur) and Phase 3 (road grades, one-surface junctions); record in docs/POLISH_PLAN_2026-09-25.md
 
-Progress: [█░░░░░░░░░] 11%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
@@ -83,6 +83,13 @@ Progress: [█░░░░░░░░░] 11%
 - [Phase 1.1]: `tools/ci/run_gates.sh` + `.github/workflows/gates.yml` are the proof path; Phase 7's noise floor can run there
 - [Phase 1.1]: Legacy 2D catalog archived to `tools/legacy/` (no deletion); gameplay camera zoom 0.38 stays locked
 - [Phase 1.1]: CLAUDE.md sections 7-9 moved verbatim to `docs/art-log/`; matrix to `docs/COMPLETION_MATRIX.md`
+- [Polish 2026-09-25]: The world is judged at 0.38 on `gameplay_tour_render_validation` (25 stops), not on the layout frames
+- [Polish 2026-09-25]: Forest density comes from visual-only layers (understory, clearing); colliding trees stay as they are because each trunk takes 215 units out of the flow field
+- [Polish 2026-09-25]: `GroundFissure` / `GroundRubble` are the shared crack and debris languages; no world script draws a straight-line crack
+- [Phase 2]: `data/world/world_composition.tres` is the single source for the camp, roads with grades, districts, landmarks, and pocket tables; the 87 nodes stay seeded until SLVG-01
+- [Phase 2]: The camp spur (D-02) is route 9, dirt, 2,229 units; seclusion rules measure excluding it, dress layers do not
+- [Phase 3]: Perimeter grade is narrower (230 bed) but keeps the dirt corridor for clearance, so no seeded placement moved
+- [Phase 3]: Junctions are one surface because every shoulder is drawn before any bed (two chunk passes)
 
 ### Pending Todos
 
@@ -90,9 +97,11 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 2: freeze `.tres` schema before WorldMap2D consumption; grep `STARTING_CAMP_POSITION` consumers when camp moves.
-- Phase 2: the composition resource must replace the three independent pocket tables (`world_background_decor_2d.gd`, `world_ambient_scenery_2d.gd`, `world_wilderness_accent_2d.gd`) and both camp literals, not add a fourth; about 20 atlas `Rect2` tables are duplicated across files.
-- Phase 4: `_build_village_east` is `_build_village_west` translated about +16,100 in X; East needs its own layout.
+- Resolved (Phase 2): the composition resource replaced the three pocket tables and both camp literals, and a gate grep keeps it that way. About 20 atlas `Rect2` tables are still duplicated across files.
+- Resolved (polish P4): East Kylät has its own layout (0 translated and 0 mirrored matches with the west).
+- Phase 4: Kaupunki still reads as a flat street at 0.38 (`city_block` occupancy 5.3 %); Ostari's approach has not been reworked.
+- Blender and Poly Haven hosts were blocked by the environment network policy for the whole 2026-09-25 pass, so FIR-01, TINT-01 and the D-15 fence bake are still open.
+- LAN host background pause needs a client grace window, which is a protocol change; it stays with DEV-01.
 - Open: `wilderness_ecology_route_validation` fails its fixture card-radius budget at HEAD (review instrument, not in CI).
 - Phase 9: fir canopy mass and salvage-atlas promotion stay art vetoes, not builder work. Device thermals out of this milestone.
 
@@ -110,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-19T22:05:24.445Z
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-09-25
+Stopped at: Phases 2 and 3 complete on claude/fervent-brown-73kgeq (polish pass record in docs/POLISH_PLAN_2026-09-25.md)
 Resume file: None

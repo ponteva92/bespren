@@ -15,8 +15,8 @@ Brownfield visual + map-composition milestone. Core value: at 480×270 the world
 
 - [x] **Phase 1: Map Audit + Redesign Contract** - Census the 14×14 map and write the contract; zero world-authoring code (completed 2026-09-19)
 - [x] **Phase 1.1: Repo and Gate Hygiene** (INSERTED) - Clone-reproducible gates, CI, legacy archive, HUD chip fix, lean CLAUDE.md (completed 2026-09-25)
-- [ ] **Phase 2: Authored Skeleton** - Consume composition data for paths, edges, districts, nodes, landmarks inside locked extents
-- [ ] **Phase 3: Readable Road Hierarchy** - Asphalt spine, dirt branch, and wilderness perimeter read as the loop's path at 1×
+- [x] **Phase 2: Authored Skeleton** - Consume composition data for paths, edges, districts, nodes, landmarks inside locked extents (completed 2026-09-25; resource nodes stay seeded until Phase 5)
+- [x] **Phase 3: Readable Road Hierarchy** - Asphalt spine, dirt branch, and wilderness perimeter read as the loop's path at 1× (completed 2026-09-25)
 - [ ] **Phase 4: District Jobs** - Kaupunki choke, Ostari salvage, Kylät quiet, Metsä threat read without labels
 - [ ] **Phase 5: Camp Clearing + Salvage Pockets** - Camp is a clearing; 87 IDs sit in co-authored pockets
 - [ ] **Phase 6: Hero Set Pieces** - Unique silhouettes at nodes; adjacent variety by construction, not `index % 8`
@@ -80,7 +80,9 @@ Plans:
   2. Camp, roads, and colliding landmarks sit at contract positions; extents are unchanged
   3. Reviewer can inspect a shipped composition Resource that `BesprenWorldMap2D` consumes; GameWorld, CoopSession, gather rules, and the peer-one RPC surface stay the same
 
-**Plans**: TBD
+**Plans**: executed directly on request (no PLAN files); record in `docs/POLISH_PLAN_2026-09-25.md` section 5 (commits `f85a5eb`, `b45780d`)
+
+**Outcome (2026-09-25):** `res://data/world/world_composition.tres` holds the camp seat and satellites, nine graded road routes including the D-02 `camp_spur`, biome paint, the five shout nouns (the Metsä weenie a reserved seat), and thirteen pocket tables, and `BesprenWorldMap2D` validates and consumes it. The three pocket tables and both camp literals now resolve through it. The refactor is output-identical against the capture noise floor. Extents, seeds, the 87 IDs, gather rules and RPC are unchanged. The 87 resource nodes still come from the 84-sector scatter, because moving them into authored pockets is Phase 5's SLVG-01.
 
 ### Phase 3: Readable Road Hierarchy
 
@@ -94,7 +96,9 @@ Plans:
   2. A 480×270 frame of the home road shows "this is the way" through width, edge, and negative space — not only as polylines in code
   3. Roads remain ground-layer presentation; collision and flow stay canonical
 
-**Plans**: TBD
+**Plans**: executed directly on request (no PLAN files); record in `docs/POLISH_PLAN_2026-09-25.md` section 5 (commit `dde2d55`)
+
+**Outcome (2026-09-25):** Three grades with bed widths of 420 / 360 / 230 units (160 / 137 / 88 screen pixels at 0.38). The perimeter has a verge and a grass crown between ruts and keeps the dirt corridor for every clearance rule. All shoulders are drawn before any bed, so junctions read as one surface. Free ends taper and wear out. The gameplay tour's `camp_spur`, `road_junction`, `dirt_branch` and `perimeter_track` stops are the 1× evidence. The flow-mask pin is unchanged.
 
 ### Phase 4: District Jobs
 
@@ -111,6 +115,8 @@ Plans:
 
 **Plans**: TBD
 
+**Progress (2026-09-25 polish pass):** Criteria 3 and 4 have partial evidence. East Kylät now has its own job (hamlet plus walled grave plot, `38b4669`), and Metsä reads as forest at 0.38 through the understory and its canopy wall around the camp bowl (`895e376`). Kaupunki (criterion 1) is still a flat street at 1×. Ostari (criterion 2) lost its display-case foundation (`05fc122`), but its approach was not reworked. The fir canopy mass (FIR-01) still needs a bake.
+
 ### Phase 5: Camp Clearing + Salvage Pockets
 
 **Goal**: Camp reads as a clearing and the 87 gather nodes live in authored salvage pockets
@@ -124,6 +130,8 @@ Plans:
   3. Pocket tables and obstacle tables match in the same change — no new pocket/shell overlap beyond the recorded unhostable tripwire
 
 **Plans**: TBD
+
+**Progress (2026-09-25 polish pass):** Criterion 2 is largely met. `WorldCampClearing2D` lays the bowl's trodden earth and satellite paths, and the understory keeps 1,180 units empty inside a canopy wall. The pocket tables now live in the composition Resource, which is where SLVG-01 will author salvage pockets. Criterion 1 (nodes in pockets) has not started.
 
 ### Phase 6: Hero Set Pieces
 
@@ -186,16 +194,16 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 1.1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
+Phases execute in numeric order: 1 → 1.1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9. The 2026-09-25 polish pass (`docs/POLISH_PLAN_2026-09-25.md`) ran before Phase 2, on request, and some of its world work counts as early evidence for Phases 4 and 5.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Map Audit + Redesign Contract | 3/3 | Complete    | 2026-09-19 |
 | 1.1 Repo and Gate Hygiene (INSERTED) | - | Complete | 2026-09-25 |
-| 2. Authored Skeleton | 0/TBD | Not started | - |
-| 3. Readable Road Hierarchy | 0/TBD | Not started | - |
-| 4. District Jobs | 0/TBD | Not started | - |
-| 5. Camp Clearing + Salvage Pockets | 0/TBD | Not started | - |
+| 2. Authored Skeleton | - | Complete | 2026-09-25 |
+| 3. Readable Road Hierarchy | - | Complete | 2026-09-25 |
+| 4. District Jobs | 0/TBD | Partial evidence (Kylät, Metsä) | - |
+| 5. Camp Clearing + Salvage Pockets | 0/TBD | Partial evidence (camp clearing) | - |
 | 6. Hero Set Pieces | 0/TBD | Not started | - |
 | 7. Capture Cameras + Canonical Gates | 0/TBD | Not started | - |
 | 8. 1× Loop, Named Places, Way-Home | 0/TBD | Not started | - |
