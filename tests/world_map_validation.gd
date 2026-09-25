@@ -144,6 +144,7 @@ func _run() -> void:
 	_validate_forest_understory(world_map)
 	_validate_camp_clearing(world_map)
 	_validate_east_rest(world_map)
+	_validate_composition(world_map)
 
 	world_map.queue_free()
 	await process_frame
@@ -1536,6 +1537,82 @@ func _validate_east_rest(world_map: BesprenWorldMap2D) -> void:
 			graves.get_marker_count() >= 30 and plot.encloses(graves.get_plot()),
 			"%d grave markers stand inside the walled plot" % graves.get_marker_count()
 		)
+
+
+## Roadmap Phase 2: the skeleton comes from one shipped Resource the map
+## consumes, and it replaces the copies rather than adding a fourth. So besides
+## the file's own consistency this greps the dress layers for the tables and the
+## camp literal the composition was meant to retire - a shared source is only a
+## claim until the primitives it replaced are gone (CLAUDE.md 7).
+func _validate_composition(world_map: BesprenWorldMap2D) -> void:
+	var composition: WorldCompositionContract = BesprenWorldMap2D.COMPOSITION
+	_check(composition != null, "The world map preloads a shipped WorldCompositionContract")
+	if composition == null:
+		return
+	_check(
+		composition.resource_path == "res://data/world/world_composition.tres",
+		"The composition ships as res://data/world/world_composition.tres"
+	)
+	_check(composition.validate().is_empty(), "The composition is internally consistent: %s" % composition.validate())
+	_check(
+		BesprenWorldMap2D.STARTING_CAMP_POSITION == composition.camp_position
+		and WorldBackgroundDecor2D.CAMP_POSITION == composition.camp_position,
+		"Every camp position consumer resolves through the composition"
+	)
+	_check(
+		world_map.get_road_route_count() == composition.road_routes.size(),
+		"The road network draws exactly the composition's %d routes" % composition.road_routes.size()
+	)
+	_check(
+		WorldWildernessAccent2D.WILDERNESS_POCKETS == WorldAmbientScenery2D.WILDERNESS_POCKETS
+		and WorldAmbientScenery2D.WILDERNESS_POCKETS == composition.get_pockets(&"ambient", &"wilderness"),
+		"The wilderness accent reads the ambient table instead of its own copy"
+	)
+	_check(
+		WorldBackgroundDecor2D.FOREST_POCKETS == composition.get_pockets(&"decor", &"forest")
+		and WorldAmbientScenery2D.CITY_POCKETS == composition.get_pockets(&"ambient", &"city"),
+		"Decor and ambient pocket accessors are the composition's tables"
+	)
+	var retired_primitives: Array[String] = []
+	for script_path: String in [
+		"res://src/world/world_map_2d.gd",
+		"res://src/world/world_background_decor_2d.gd",
+		"res://src/world/world_ambient_scenery_2d.gd",
+		"res://src/world/world_wilderness_accent_2d.gd",
+	]:
+		var source: String = FileAccess.get_file_as_string(script_path)
+		if source.contains("_POCKETS: Array[Vector4] = [") or source.contains("Vector2(9950.0, 2400.0)"):
+			retired_primitives.append(script_path.get_file())
+	_check(
+		retired_primitives.is_empty(),
+		"No world script still authors a pocket table or the camp literal (%s)" % ", ".join(retired_primitives)
+	)
+	var expected_landmarks: PackedStringArray = PackedStringArray([
+		"camp_amber_gold", "mall_gate", "west_yard", "city_choke", "metsa_threat_weenie",
+	])
+	_check(
+		composition.landmark_names == expected_landmarks,
+		"The composition names exactly the contract's five shout nouns"
+	)
+	var landmarks_are_placed: bool = composition.landmark_positions.size() == expected_landmarks.size()
+	for position: Vector2 in composition.landmark_positions:
+		if not BesprenWorldMap2D.PLAYABLE_RECT.has_point(position):
+			landmarks_are_placed = false
+	_check(landmarks_are_placed, "Every landmark sits inside the playable extents")
+	_check(
+		composition.get_landmark_position(&"camp_amber_gold") == composition.camp_position,
+		"The camp landmark is the camp"
+	)
+	_check(
+		world_map.get_biome_at_world(composition.get_landmark_position(&"metsa_threat_weenie"))
+		== BesprenWorldMap2D.Biome.FOREST,
+		"The Metsa threat weenie's reserved seat is in Metsa"
+	)
+	var regions: Dictionary[StringName, Rect2] = world_map.get_biome_regions()
+	_check(
+		regions.has(&"kaupunki") and regions.has(&"ostari") and regions.has(&"kyla_west") and regions.has(&"kyla_east"),
+		"District regions are derived from the composition's district paint"
+	)
 
 
 func _subtree_has_physics(node: Node) -> bool:

@@ -15,10 +15,16 @@ const GRID_SIZE: int = 14
 const CELL_SIZE: float = 2048.0
 const PLAYABLE_HALF_EXTENT: float = 14336.0
 const WORLD_SIZE: float = PLAYABLE_HALF_EXTENT * 2.0
-## Secluded east-forest clearing used by the initial camp and player roster.
-## This point is 2,098 world units from the nearest physical road edge; the
-## complete camp cluster keeps a conservative minimum road clearance of 1,600.
-const STARTING_CAMP_POSITION: Vector2 = Vector2(9950.0, 2400.0)
+## The authored skeleton - camp, roads, biome paint, landmarks and every dress
+## layer's pockets - as the shipped Resource roadmap Phase 2 asks for. See
+## `WorldCompositionContract`.
+const COMPOSITION: WorldCompositionContract = preload("res://data/world/world_composition.tres")
+## Secluded east-forest clearing used by the initial camp and player roster,
+## read from the composition. Kept under its old constant name as a static
+## accessor so every consumer - session spawns, the build system, resource
+## teaching anchors, the dress layers and the gates - resolves through one file.
+## Treat it as read-only.
+static var STARTING_CAMP_POSITION: Vector2 = COMPOSITION.camp_position
 const STARTING_CAMP_REQUIRED_ROAD_EDGE_CLEARANCE: float = 1600.0
 const PLAYABLE_RECT: Rect2 = Rect2(
 	Vector2(-PLAYABLE_HALF_EXTENT, -PLAYABLE_HALF_EXTENT),
@@ -128,6 +134,9 @@ func ensure_built() -> void:
 	if _built:
 		return
 	_built = true
+	var composition_problem: String = COMPOSITION.validate()
+	if not composition_problem.is_empty():
+		push_error("World composition rejected: %s" % composition_problem)
 	_build_biome_cells()
 	_build_ground_tile_map()
 	_build_nature_tile_map()
@@ -217,10 +226,11 @@ func get_core_position() -> Vector2:
 
 func get_biome_regions() -> Dictionary[StringName, Rect2]:
 	var regions: Dictionary[StringName, Rect2] = {}
-	regions[&"kaupunki"] = _cells_to_rect(Vector2i(1, 1), Vector2i(5, 5))
-	regions[&"ostari"] = _cells_to_rect(Vector2i(7, 2), Vector2i(10, 5))
-	regions[&"kyla_west"] = _cells_to_rect(Vector2i(1, 9), Vector2i(4, 12))
-	regions[&"kyla_east"] = _cells_to_rect(Vector2i(9, 9), Vector2i(12, 12))
+	for district_index: int in range(COMPOSITION.district_names.size()):
+		var cells: Rect2i = COMPOSITION.district_cell_rects[district_index]
+		regions[StringName(COMPOSITION.district_names[district_index])] = _cells_to_rect(
+			cells.position, cells.end - Vector2i.ONE
+		)
 	regions[&"metsa_perimeter"] = PLAYABLE_RECT
 	return regions
 
@@ -412,24 +422,23 @@ func resolve_player_motion(
 	return current_position
 
 
+## Paints biomes from the composition in its authored order: base, perimeter
+## ring, forest rects, then districts, which win.
 func _build_biome_cells() -> void:
 	_biome_cells.resize(GRID_SIZE * GRID_SIZE)
-	_biome_cells.fill(Biome.WILDERNESS)
+	_biome_cells.fill(COMPOSITION.base_biome)
 	for row: int in range(GRID_SIZE):
 		for column: int in range(GRID_SIZE):
 			var cell: Vector2i = Vector2i(column, row)
-			var biome: int = Biome.WILDERNESS
-			var perimeter: bool = column == 0 or row == 0 or column == GRID_SIZE - 1 or row == GRID_SIZE - 1
-			if perimeter or (column >= 10 and row <= 8) or (column <= 2 and row >= 5):
-				biome = Biome.FOREST
-			if column >= 1 and column <= 5 and row >= 1 and row <= 5:
-				biome = Biome.CITY
-			elif column >= 7 and column <= 10 and row >= 2 and row <= 5:
-				biome = Biome.MALL
-			elif column >= 1 and column <= 4 and row >= 9 and row <= 12:
-				biome = Biome.VILLAGE_WEST
-			elif column >= 9 and column <= 12 and row >= 9 and row <= 12:
-				biome = Biome.VILLAGE_EAST
+			var biome: int = COMPOSITION.base_biome
+			if column == 0 or row == 0 or column == GRID_SIZE - 1 or row == GRID_SIZE - 1:
+				biome = COMPOSITION.perimeter_biome
+			for forest_rect: Rect2i in COMPOSITION.forest_cell_rects:
+				if forest_rect.has_point(cell):
+					biome = COMPOSITION.forest_biome
+			for district_index: int in range(COMPOSITION.district_cell_rects.size()):
+				if COMPOSITION.district_cell_rects[district_index].has_point(cell):
+					biome = COMPOSITION.district_biomes[district_index]
 			_biome_cells[_cell_index(cell)] = biome
 
 
@@ -505,18 +514,7 @@ func _build_nature_tile_map() -> void:
 
 
 func _build_road_network() -> void:
-	var routes: Array[PackedVector2Array] = [
-		PackedVector2Array([Vector2(-12288.0, 0.0), Vector2.ZERO, Vector2(12288.0, 0.0)]),
-		PackedVector2Array([Vector2(0.0, -12288.0), Vector2.ZERO, Vector2(0.0, 12288.0)]),
-		PackedVector2Array([Vector2(-8192.0, -11264.0), Vector2(-8192.0, 0.0), Vector2.ZERO]),
-		PackedVector2Array([Vector2(0.0, -5500.0), Vector2(9000.0, -5500.0), Vector2(9000.0, 0.0)]),
-		PackedVector2Array([Vector2(0.0, 4096.0), Vector2(-8192.0, 4096.0), Vector2(-8192.0, 11264.0)]),
-		PackedVector2Array([Vector2(0.0, 4096.0), Vector2(8192.0, 4096.0), Vector2(8192.0, 11264.0)]),
-		PackedVector2Array([Vector2(-12288.0, -12288.0), Vector2(12288.0, -12288.0), Vector2(12288.0, 12288.0), Vector2(-12288.0, 12288.0), Vector2(-12288.0, -12288.0)]),
-		PackedVector2Array([Vector2(9000.0, -5500.0), Vector2(11264.0, -5500.0), Vector2(11264.0, -11264.0)]),
-	]
-	var dirt_flags: PackedByteArray = PackedByteArray([0, 0, 0, 0, 1, 1, 1, 1])
-	road_network.configure(routes, dirt_flags)
+	road_network.configure(COMPOSITION.road_routes, COMPOSITION.get_dirt_flags())
 	terrain_details.z_index = -20
 	terrain_details.z_as_relative = false
 
@@ -792,42 +790,18 @@ func _can_place_density_obstacle(world_position: Vector2, footprint_radius: floa
 	return is_position_walkable(world_position, footprint_radius)
 
 
+## Three restrained utility clusters turn the secluded Base clearing into a
+## lived-in camp. Their authored ring, now in the composition, stays clear of
+## the Base, the co-op spawn lane, the starter resources and every road edge;
+## building and flow use the same obstacles.
 func _build_starting_camp_satellites() -> void:
-	# Three restrained utility clusters turn the secluded Base clearing into a
-	# lived-in camp. Their authored ring stays clear of the Base, co-op spawn
-	# lane, starter resources, and every road edge; building/flow use the same
-	# obstacles. Their asymmetric west/south-east arc fits the road-free lens
-	# between the central route, east-village branch, and eastern outer loop.
-	var placements: Array[Dictionary] = [
-		{
-			&"name": &"StartingCampBedding",
-			&"offset": Vector2(-650.0, -300.0),
-			&"size": Vector2(240.0, 120.0),
-			&"kind": WorldObstacle2D.VisualKind.CAMP_BEDDING,
-			&"rotation": -0.12,
-		},
-		{
-			&"name": &"StartingCampSupplyCache",
-			&"offset": Vector2(350.0, 650.0),
-			&"size": Vector2(210.0, 170.0),
-			&"kind": WorldObstacle2D.VisualKind.CAMP_SUPPLY_CACHE,
-			&"rotation": 0.18,
-		},
-		{
-			&"name": &"StartingCampMedicalCache",
-			&"offset": Vector2(0.0, 720.0),
-			&"size": Vector2(180.0, 140.0),
-			&"kind": WorldObstacle2D.VisualKind.CAMP_MEDICAL_CACHE,
-			&"rotation": -0.08,
-		},
-	]
-	for placement: Dictionary in placements:
+	for placement: WorldCompositionPlacement in COMPOSITION.camp_satellites:
 		_add_rectangle_obstacle(
-			placement[&"name"],
-			STARTING_CAMP_POSITION + placement[&"offset"],
-			placement[&"size"],
-			placement[&"kind"],
-			placement[&"rotation"]
+			placement.placement_name,
+			STARTING_CAMP_POSITION + placement.offset,
+			placement.size,
+			placement.visual_kind,
+			placement.rotation
 		)
 
 

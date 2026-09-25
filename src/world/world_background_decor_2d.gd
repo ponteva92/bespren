@@ -8,7 +8,9 @@ const MOSS_COUNT: int = 220
 const PROP_COUNT: int = 420
 const TOTAL_DECORATION_COUNT: int = RUBBLE_COUNT + CRACK_COUNT + MOSS_COUNT + PROP_COUNT
 const RENDER_CHUNK_SIZE: float = 4096.0
-const CAMP_POSITION: Vector2 = Vector2(9950.0, 2400.0)
+## Resolved from the world composition rather than restated: this used to be a
+## second `Vector2(9950, 2400)` literal, the grep trap the Phase 1 audit named.
+static var CAMP_POSITION: Vector2 = BesprenWorldMap2D.COMPOSITION.camp_position
 const CAMP_CLEAR_RADIUS: float = 1360.0
 const PLACEMENT_ATTEMPTS: int = 96
 
@@ -61,64 +63,15 @@ const PROP_ZONE_COUNTS: Array[int] = [82, 70, 52, 52, 126, 38]
 # These are deliberate composition pockets rather than biome-wide scatter
 # rectangles. Reusing a small number of ellipses creates readable clusters and
 # leaves broad negative-space corridors between landmarks.
-const CITY_POCKETS: Array[Vector4] = [
-	Vector4(-12600.0, -10200.0, 630.0, 980.0),
-	Vector4(-9300.0, -12200.0, 1050.0, 500.0),
-	Vector4(-7800.0, -8950.0, 760.0, 900.0),
-	Vector4(-3100.0, -10300.0, 720.0, 1050.0),
-	Vector4(-8500.0, -6100.0, 820.0, 880.0),
-	Vector4(-12300.0, -5850.0, 660.0, 880.0),
-	Vector4(-3000.0, -5350.0, 720.0, 920.0),
-]
-const MALL_POCKETS: Array[Vector4] = [
-	Vector4(1200.0, -10250.0, 780.0, 950.0),
-	Vector4(9050.0, -9300.0, 800.0, 1050.0),
-	Vector4(2400.0, -5750.0, 920.0, 720.0),
-	Vector4(4750.0, -6150.0, 1100.0, 570.0),
-	Vector4(7350.0, -5750.0, 900.0, 720.0),
-	Vector4(2450.0, -1250.0, 1050.0, 680.0),
-	Vector4(7200.0, -1250.0, 1120.0, 680.0),
-]
-const WEST_VILLAGE_POCKETS: Array[Vector4] = [
-	Vector4(-12500.0, 6500.0, 630.0, 840.0),
-	Vector4(-8650.0, 5850.0, 1150.0, 620.0),
-	Vector4(-3900.0, 7600.0, 760.0, 1050.0),
-	Vector4(-11600.0, 11150.0, 980.0, 720.0),
-	Vector4(-7600.0, 11100.0, 1120.0, 760.0),
-	Vector4(-3900.0, 11800.0, 720.0, 650.0),
-]
-const EAST_VILLAGE_POCKETS: Array[Vector4] = [
-	Vector4(3900.0, 7600.0, 760.0, 1050.0),
-	Vector4(7600.0, 5900.0, 1100.0, 650.0),
-	Vector4(12350.0, 6500.0, 680.0, 880.0),
-	Vector4(3900.0, 11700.0, 760.0, 680.0),
-	Vector4(7600.0, 11100.0, 1050.0, 760.0),
-	Vector4(12100.0, 11500.0, 850.0, 720.0),
-]
-const FOREST_POCKETS: Array[Vector4] = [
-	Vector4(-10200.0, -13400.0, 1450.0, 520.0),
-	Vector4(-4600.0, -13400.0, 1300.0, 520.0),
-	Vector4(4200.0, -13400.0, 1400.0, 520.0),
-	Vector4(10600.0, -13400.0, 1250.0, 520.0),
-	Vector4(-13500.0, -7000.0, 500.0, 1450.0),
-	Vector4(-13500.0, 1700.0, 500.0, 1500.0),
-	Vector4(13500.0, -8200.0, 500.0, 1350.0),
-	Vector4(13500.0, -2800.0, 500.0, 1250.0),
-	Vector4(13500.0, 7600.0, 500.0, 1250.0),
-	Vector4(-10200.0, 13400.0, 1350.0, 500.0),
-	Vector4(-2600.0, 13400.0, 1400.0, 500.0),
-	Vector4(4400.0, 13400.0, 1300.0, 500.0),
-	Vector4(10500.0, 13400.0, 1250.0, 500.0),
-]
-const CONNECTOR_POCKETS: Array[Vector4] = [
-	Vector4(-5600.0, -760.0, 1300.0, 330.0),
-	Vector4(-3150.0, 760.0, 1100.0, 330.0),
-	Vector4(3350.0, -760.0, 1200.0, 330.0),
-	Vector4(6500.0, 760.0, 1050.0, 330.0),
-	Vector4(-4200.0, 3350.0, 1150.0, 330.0),
-	Vector4(2900.0, 4820.0, 1150.0, 330.0),
-	Vector4(9600.0, -760.0, 850.0, 330.0),
-]
+## Pocket tables live in `res://data/world/world_composition.tres` beside the
+## ambient layer's, so a pocket moves in one file. The names stay, as static
+## accessors, so every sibling layer and gate keeps reading one symbol.
+static var CITY_POCKETS: Array[Vector4] = BesprenWorldMap2D.COMPOSITION.get_pockets(&"decor", &"city")
+static var MALL_POCKETS: Array[Vector4] = BesprenWorldMap2D.COMPOSITION.get_pockets(&"decor", &"mall")
+static var WEST_VILLAGE_POCKETS: Array[Vector4] = BesprenWorldMap2D.COMPOSITION.get_pockets(&"decor", &"village_west")
+static var EAST_VILLAGE_POCKETS: Array[Vector4] = BesprenWorldMap2D.COMPOSITION.get_pockets(&"decor", &"village_east")
+static var FOREST_POCKETS: Array[Vector4] = BesprenWorldMap2D.COMPOSITION.get_pockets(&"decor", &"forest")
+static var CONNECTOR_POCKETS: Array[Vector4] = BesprenWorldMap2D.COMPOSITION.get_pockets(&"decor", &"connectors")
 
 # Landmarks remain visually dominant. Decoration may gather near their outer
 # edges, but never directly beneath the principal authored footprints.

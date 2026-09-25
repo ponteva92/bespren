@@ -30,18 +30,9 @@ enum AccentRecipe {
 ## These reuse the open-world pockets without modifying their existing
 ## sequential-RNG consumers. Two or three quiet ground accents per pocket add
 ## material variation while preserving broad traversal-readable negative space.
-const WILDERNESS_POCKETS: Array[Vector4] = [
-	Vector4(-5700.0, -2200.0, 760.0, 620.0),
-	Vector4(-3300.0, -2600.0, 700.0, 620.0),
-	Vector4(2600.0, -2200.0, 700.0, 620.0),
-	Vector4(5200.0, -1800.0, 620.0, 620.0),
-	Vector4(-5200.0, 1800.0, 760.0, 620.0),
-	Vector4(-2800.0, 2700.0, 680.0, 620.0),
-	Vector4(2500.0, 2400.0, 720.0, 620.0),
-	Vector4(5100.0, 2600.0, 620.0, 620.0),
-	Vector4(-4200.0, 6200.0, 720.0, 680.0),
-	Vector4(2600.0, 6800.0, 720.0, 680.0),
-]
+## The ambient layer's wilderness pockets, read from the one table in the world
+## composition. This layer used to author a byte-for-byte copy of it.
+static var WILDERNESS_POCKETS: Array[Vector4] = BesprenWorldMap2D.COMPOSITION.get_pockets(&"ambient", &"wilderness")
 const ANCHOR_COUNTS_BY_POCKET: Array[int] = [3, 2, 2, 2, 3, 2, 2, 2, 3, 3]
 
 var _half_extent: float = 14336.0

@@ -210,6 +210,22 @@
       "type": "Script"
     },
     {
+      "path": "res://data/world/world_composition.tres",
+      "type": "Resource"
+    },
+    {
+      "path": "res://src/world/world_composition_contract.gd",
+      "type": "Script"
+    },
+    {
+      "path": "res://src/world/world_composition_placement.gd",
+      "type": "Script"
+    },
+    {
+      "path": "res://src/world/world_pocket_table.gd",
+      "type": "Script"
+    },
+    {
       "path": "res://src/world/world_background_decor_2d.gd",
       "type": "Script"
     },

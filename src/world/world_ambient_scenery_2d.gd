@@ -55,100 +55,17 @@ enum SceneryKind {
 ## east of the perimeter route: 172 items over fifteen usable pockets was eleven
 ## each, and 236 over twenty is the same eleven with the gaps closed.
 const ZONE_SCENERY_COUNTS: Array[int] = [96, 72, 48, 48, 236, 92, 48]
-const CITY_POCKETS: Array[Vector4] = [
-	Vector4(-11800.0, -9700.0, 580.0, 620.0),
-	Vector4(-9200.0, -10200.0, 620.0, 520.0),
-	Vector4(-6300.0, -9700.0, 660.0, 620.0),
-	Vector4(-11700.0, -6700.0, 600.0, 580.0),
-	Vector4(-9200.0, -6000.0, 580.0, 680.0),
-	Vector4(-6400.0, -6200.0, 650.0, 660.0),
-	Vector4(-11200.0, -3600.0, 650.0, 500.0),
-	Vector4(-5000.0, -3450.0, 700.0, 520.0),
-]
-const MALL_POCKETS: Array[Vector4] = [
-	Vector4(2350.0, -6650.0, 620.0, 360.0),
-	Vector4(4750.0, -6650.0, 780.0, 360.0),
-	Vector4(7350.0, -6650.0, 660.0, 360.0),
-	Vector4(2350.0, -4400.0, 600.0, 480.0),
-	Vector4(4750.0, -4100.0, 820.0, 420.0),
-	Vector4(7350.0, -4400.0, 600.0, 480.0),
-	Vector4(10500.0, -8700.0, 560.0, 800.0),
-	Vector4(10500.0, -2600.0, 560.0, 720.0),
-]
-const WEST_VILLAGE_POCKETS: Array[Vector4] = [
-	Vector4(-11200.0, 7300.0, 600.0, 520.0),
-	Vector4(-9400.0, 7000.0, 560.0, 460.0),
-	Vector4(-6100.0, 7300.0, 620.0, 520.0),
-	Vector4(-11000.0, 10500.0, 650.0, 620.0),
-	Vector4(-8300.0, 11200.0, 560.0, 600.0),
-	Vector4(-5000.0, 10800.0, 620.0, 600.0),
-]
-const EAST_VILLAGE_POCKETS: Array[Vector4] = [
-	Vector4(5200.0, 7300.0, 620.0, 520.0),
-	Vector4(7000.0, 7000.0, 560.0, 460.0),
-	Vector4(10800.0, 7300.0, 620.0, 520.0),
-	Vector4(5200.0, 10800.0, 620.0, 600.0),
-	Vector4(8000.0, 11200.0, 560.0, 620.0),
-	Vector4(11200.0, 10600.0, 620.0, 600.0),
-]
-const FOREST_POCKETS: Array[Vector4] = [
-	Vector4(-10400.0, -13300.0, 1060.0, 360.0),
-	Vector4(-5400.0, -13300.0, 1060.0, 360.0),
-	Vector4(3200.0, -13300.0, 1080.0, 360.0),
-	Vector4(9300.0, -12950.0, 1020.0, 620.0),
-	Vector4(11700.0, -9200.0, 700.0, 1100.0),
-	Vector4(11800.0, -4200.0, 700.0, 1050.0),
-	Vector4(11800.0, 4200.0, 740.0, 1020.0),
-	Vector4(11600.0, 9200.0, 760.0, 980.0),
-	Vector4(9300.0, 12400.0, 1100.0, 440.0),
-	Vector4(3400.0, 13300.0, 1100.0, 360.0),
-	Vector4(-3000.0, 13300.0, 1050.0, 360.0),
-	Vector4(-9200.0, 13100.0, 1050.0, 420.0),
-	## The three western belt pockets used to sit at x -12600 with a half-width
-	## of 380, which put every one of their candidates inside the perimeter
-	## route's clearance band: sampling road-edge distance along y = -5200, 2600
-	## and 8500 returns nothing at or above the old 480 anywhere in x -12980 to
-	## -12220. All three were completely impossible, and `_sample_position`
-	## cycles pockets on failure, so the belt silently donated its whole share to
-	## the pockets that could be filled. They are centred on the legal band the
-	## probe found instead, and widened to reach both it and the near-road strip
-	## the reduced forest clearance opens up.
-	Vector4(-13300.0, 8500.0, 780.0, 1120.0),
-	Vector4(-13300.0, 2600.0, 780.0, 1150.0),
-	Vector4(-13300.0, -5200.0, 780.0, 1080.0),
-	Vector4(-8600.0, 2700.0, 720.0, 640.0),
-	## East of the perimeter route the nearest forest pocket was 3,400 units
-	## away, which is why the right half of the forest-density frame contained no
-	## scenery at all. These two close that gap, sited where the biome mask still
-	## reads 0.84 forest - the belt at x -10800 is only forest between y -1000 and
-	## y 4000, and a tree pocket outside that band would stand a canopy on ground
-	## the terrain shader is painting as asphalt.
-	Vector4(-10800.0, 2600.0, 900.0, 780.0),
-	Vector4(-10900.0, 500.0, 860.0, 820.0),
-	Vector4(7800.0, 800.0, 560.0, 620.0),
-	Vector4(11800.0, 1800.0, 620.0, 760.0),
-]
-const WILDERNESS_POCKETS: Array[Vector4] = [
-	Vector4(-5700.0, -2200.0, 760.0, 620.0),
-	Vector4(-3300.0, -2600.0, 700.0, 620.0),
-	Vector4(2600.0, -2200.0, 700.0, 620.0),
-	Vector4(5200.0, -1800.0, 620.0, 620.0),
-	Vector4(-5200.0, 1800.0, 760.0, 620.0),
-	Vector4(-2800.0, 2700.0, 680.0, 620.0),
-	Vector4(2500.0, 2400.0, 720.0, 620.0),
-	Vector4(5100.0, 2600.0, 620.0, 620.0),
-	Vector4(-4200.0, 6200.0, 720.0, 680.0),
-	Vector4(2600.0, 6800.0, 720.0, 680.0),
-]
-const CONNECTOR_POCKETS: Array[Vector4] = [
-	Vector4(-5700.0, -920.0, 740.0, 360.0),
-	Vector4(-3100.0, 920.0, 680.0, 360.0),
-	Vector4(3200.0, -920.0, 700.0, 360.0),
-	Vector4(6500.0, 920.0, 680.0, 360.0),
-	Vector4(-4200.0, 3350.0, 720.0, 360.0),
-	Vector4(2900.0, 4820.0, 720.0, 360.0),
-	Vector4(9600.0, -920.0, 620.0, 360.0),
-]
+## Pocket tables live in `res://data/world/world_composition.tres`; the records
+## behind individual pockets - the three western belt pockets moved onto the
+## legal band, the two added east of the perimeter route - are in git history
+## and docs/art-log/16-world.md. Kept as static accessors under their old names.
+static var CITY_POCKETS: Array[Vector4] = BesprenWorldMap2D.COMPOSITION.get_pockets(&"ambient", &"city")
+static var MALL_POCKETS: Array[Vector4] = BesprenWorldMap2D.COMPOSITION.get_pockets(&"ambient", &"mall")
+static var WEST_VILLAGE_POCKETS: Array[Vector4] = BesprenWorldMap2D.COMPOSITION.get_pockets(&"ambient", &"village_west")
+static var EAST_VILLAGE_POCKETS: Array[Vector4] = BesprenWorldMap2D.COMPOSITION.get_pockets(&"ambient", &"village_east")
+static var FOREST_POCKETS: Array[Vector4] = BesprenWorldMap2D.COMPOSITION.get_pockets(&"ambient", &"forest")
+static var WILDERNESS_POCKETS: Array[Vector4] = BesprenWorldMap2D.COMPOSITION.get_pockets(&"ambient", &"wilderness")
+static var CONNECTOR_POCKETS: Array[Vector4] = BesprenWorldMap2D.COMPOSITION.get_pockets(&"ambient", &"connectors")
 
 const CITY_KIND_POOL: Array[int] = [
 	SceneryKind.RUIN_FACADE,

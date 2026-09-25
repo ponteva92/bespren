@@ -1,0 +1,124 @@
+[gd_resource type="Resource" script_class="WorldCompositionContract" format=4]
+
+[ext_resource type="Script" path="res://src/world/world_composition_placement.gd" id="1_2v2d8"]
+[ext_resource type="Script" path="res://src/world/world_pocket_table.gd" id="2_gvurw"]
+[ext_resource type="Script" path="res://src/world/world_composition_contract.gd" id="3_pi1mq"]
+
+[sub_resource type="Resource" id="Resource_jkyf0"]
+script = ExtResource("1_2v2d8")
+placement_name = &"StartingCampBedding"
+offset = Vector2(-650, -300)
+size = Vector2(240, 120)
+rotation = -0.12
+visual_kind = 10
+
+[sub_resource type="Resource" id="Resource_aey55"]
+script = ExtResource("1_2v2d8")
+placement_name = &"StartingCampSupplyCache"
+offset = Vector2(350, 650)
+size = Vector2(210, 170)
+rotation = 0.18
+visual_kind = 11
+
+[sub_resource type="Resource" id="Resource_uphs5"]
+script = ExtResource("1_2v2d8")
+placement_name = &"StartingCampMedicalCache"
+offset = Vector2(0, 720)
+size = Vector2(180, 140)
+rotation = -0.08
+visual_kind = 12
+
+[sub_resource type="Resource" id="Resource_5canu"]
+script = ExtResource("2_gvurw")
+layer = &"decor"
+zone = &"city"
+pockets = PackedVector4Array(-12600, -10200, 630, 980, -9300, -12200, 1050, 500, -7800, -8950, 760, 900, -3100, -10300, 720, 1050, -8500, -6100, 820, 880, -12300, -5850, 660, 880, -3000, -5350, 720, 920)
+
+[sub_resource type="Resource" id="Resource_ttios"]
+script = ExtResource("2_gvurw")
+layer = &"decor"
+zone = &"mall"
+pockets = PackedVector4Array(1200, -10250, 780, 950, 9050, -9300, 800, 1050, 2400, -5750, 920, 720, 4750, -6150, 1100, 570, 7350, -5750, 900, 720, 2450, -1250, 1050, 680, 7200, -1250, 1120, 680)
+
+[sub_resource type="Resource" id="Resource_sx1tt"]
+script = ExtResource("2_gvurw")
+layer = &"decor"
+zone = &"village_west"
+pockets = PackedVector4Array(-12500, 6500, 630, 840, -8650, 5850, 1150, 620, -3900, 7600, 760, 1050, -11600, 11150, 980, 720, -7600, 11100, 1120, 760, -3900, 11800, 720, 650)
+
+[sub_resource type="Resource" id="Resource_rqy2e"]
+script = ExtResource("2_gvurw")
+layer = &"decor"
+zone = &"village_east"
+pockets = PackedVector4Array(3900, 7600, 760, 1050, 7600, 5900, 1100, 650, 12350, 6500, 680, 880, 3900, 11700, 760, 680, 7600, 11100, 1050, 760, 12100, 11500, 850, 720)
+
+[sub_resource type="Resource" id="Resource_edcxe"]
+script = ExtResource("2_gvurw")
+layer = &"decor"
+zone = &"forest"
+pockets = PackedVector4Array(-10200, -13400, 1450, 520, -4600, -13400, 1300, 520, 4200, -13400, 1400, 520, 10600, -13400, 1250, 520, -13500, -7000, 500, 1450, -13500, 1700, 500, 1500, 13500, -8200, 500, 1350, 13500, -2800, 500, 1250, 13500, 7600, 500, 1250, -10200, 13400, 1350, 500, -2600, 13400, 1400, 500, 4400, 13400, 1300, 500, 10500, 13400, 1250, 500)
+
+[sub_resource type="Resource" id="Resource_r7524"]
+script = ExtResource("2_gvurw")
+layer = &"decor"
+zone = &"connectors"
+pockets = PackedVector4Array(-5600, -760, 1300, 330, -3150, 760, 1100, 330, 3350, -760, 1200, 330, 6500, 760, 1050, 330, -4200, 3350, 1150, 330, 2900, 4820, 1150, 330, 9600, -760, 850, 330)
+
+[sub_resource type="Resource" id="Resource_nsyyh"]
+script = ExtResource("2_gvurw")
+layer = &"ambient"
+zone = &"city"
+pockets = PackedVector4Array(-11800, -9700, 580, 620, -9200, -10200, 620, 520, -6300, -9700, 660, 620, -11700, -6700, 600, 580, -9200, -6000, 580, 680, -6400, -6200, 650, 660, -11200, -3600, 650, 500, -5000, -3450, 700, 520)
+
+[sub_resource type="Resource" id="Resource_20n3w"]
+script = ExtResource("2_gvurw")
+layer = &"ambient"
+zone = &"mall"
+pockets = PackedVector4Array(2350, -6650, 620, 360, 4750, -6650, 780, 360, 7350, -6650, 660, 360, 2350, -4400, 600, 480, 4750, -4100, 820, 420, 7350, -4400, 600, 480, 10500, -8700, 560, 800, 10500, -2600, 560, 720)
+
+[sub_resource type="Resource" id="Resource_ndlv4"]
+script = ExtResource("2_gvurw")
+layer = &"ambient"
+zone = &"village_west"
+pockets = PackedVector4Array(-11200, 7300, 600, 520, -9400, 7000, 560, 460, -6100, 7300, 620, 520, -11000, 10500, 650, 620, -8300, 11200, 560, 600, -5000, 10800, 620, 600)
+
+[sub_resource type="Resource" id="Resource_uamhr"]
+script = ExtResource("2_gvurw")
+layer = &"ambient"
+zone = &"village_east"
+pockets = PackedVector4Array(5200, 7300, 620, 520, 7000, 7000, 560, 460, 10800, 7300, 620, 520, 5200, 10800, 620, 600, 8000, 11200, 560, 620, 11200, 10600, 620, 600)
+
+[sub_resource type="Resource" id="Resource_jyx68"]
+script = ExtResource("2_gvurw")
+layer = &"ambient"
+zone = &"forest"
+pockets = PackedVector4Array(-10400, -13300, 1060, 360, -5400, -13300, 1060, 360, 3200, -13300, 1080, 360, 9300, -12950, 1020, 620, 11700, -9200, 700, 1100, 11800, -4200, 700, 1050, 11800, 4200, 740, 1020, 11600, 9200, 760, 980, 9300, 12400, 1100, 440, 3400, 13300, 1100, 360, -3000, 13300, 1050, 360, -9200, 13100, 1050, 420, -13300, 8500, 780, 1120, -13300, 2600, 780, 1150, -13300, -5200, 780, 1080, -8600, 2700, 720, 640, -10800, 2600, 900, 780, -10900, 500, 860, 820, 7800, 800, 560, 620, 11800, 1800, 620, 760)
+
+[sub_resource type="Resource" id="Resource_7w2px"]
+script = ExtResource("2_gvurw")
+layer = &"ambient"
+zone = &"wilderness"
+pockets = PackedVector4Array(-5700, -2200, 760, 620, -3300, -2600, 700, 620, 2600, -2200, 700, 620, 5200, -1800, 620, 620, -5200, 1800, 760, 620, -2800, 2700, 680, 620, 2500, 2400, 720, 620, 5100, 2600, 620, 620, -4200, 6200, 720, 680, 2600, 6800, 720, 680)
+
+[sub_resource type="Resource" id="Resource_pftji"]
+script = ExtResource("2_gvurw")
+layer = &"ambient"
+zone = &"connectors"
+pockets = PackedVector4Array(-5700, -920, 740, 360, -3100, 920, 680, 360, 3200, -920, 700, 360, 6500, 920, 680, 360, -4200, 3350, 720, 360, 2900, 4820, 720, 360, 9600, -920, 620, 360)
+
+[resource]
+script = ExtResource("3_pi1mq")
+camp_position = Vector2(9950, 2400)
+camp_satellites = Array[ExtResource("1_2v2d8")]([SubResource("Resource_jkyf0"), SubResource("Resource_aey55"), SubResource("Resource_uphs5")])
+road_names = PackedStringArray("spine_east_west", "spine_north_south", "kaupunki_branch", "ostari_branch", "kyla_west_path", "kyla_east_path", "wilderness_perimeter", "metsa_north_east_track")
+road_routes = Array[PackedVector2Array]([PackedVector2Array(-12288, 0, 0, 0, 12288, 0), PackedVector2Array(0, -12288, 0, 0, 0, 12288), PackedVector2Array(-8192, -11264, -8192, 0, 0, 0), PackedVector2Array(0, -5500, 9000, -5500, 9000, 0), PackedVector2Array(0, 4096, -8192, 4096, -8192, 11264), PackedVector2Array(0, 4096, 8192, 4096, 8192, 11264), PackedVector2Array(-12288, -12288, 12288, -12288, 12288, 12288, -12288, 12288, -12288, -12288), PackedVector2Array(9000, -5500, 11264, -5500, 11264, -11264)])
+road_grades = PackedInt32Array(0, 0, 0, 0, 1, 1, 2, 1)
+forest_cell_rects = Array[Rect2i]([Rect2i(10, 0, 4, 9), Rect2i(0, 5, 3, 9)])
+district_names = PackedStringArray("kaupunki", "ostari", "kyla_west", "kyla_east")
+district_biomes = PackedInt32Array(1, 2, 3, 4)
+district_cell_rects = Array[Rect2i]([Rect2i(1, 1, 5, 5), Rect2i(7, 2, 4, 4), Rect2i(1, 9, 4, 4), Rect2i(9, 9, 4, 4)])
+landmark_names = PackedStringArray("camp_amber_gold", "mall_gate", "west_yard", "city_choke", "metsa_threat_weenie")
+landmark_positions = PackedVector2Array(9950, 2400, 2600, -5500, -8050, 8350, -9200, -6000, 10300, -980)
+landmark_radii = PackedFloat32Array(520, 600, 1400, 900, 360)
+landmark_roles = PackedStringArray("30s beat 1: the refuge weenie, the only dominant Amber Gold", "Wayfinding: the missing-tooth gap where the Ostari corridor opens west", "Wayfinding: negative space and homestead silhouette of West Kylat", "Wayfinding: dense ruin mass that breaks the Kaupunki sightline", "30s named landmark: position reserved on MossyRock_10; silhouette is Phase 6 art")
+pocket_tables = Array[ExtResource("2_gvurw")]([SubResource("Resource_5canu"), SubResource("Resource_ttios"), SubResource("Resource_sx1tt"), SubResource("Resource_rqy2e"), SubResource("Resource_edcxe"), SubResource("Resource_r7524"), SubResource("Resource_nsyyh"), SubResource("Resource_20n3w"), SubResource("Resource_ndlv4"), SubResource("Resource_uamhr"), SubResource("Resource_jyx68"), SubResource("Resource_7w2px"), SubResource("Resource_pftji")])

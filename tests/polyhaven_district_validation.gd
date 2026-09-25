@@ -46,8 +46,11 @@ const EXPECTED_FRAME_COUNT: int = 8
 ## `class_name` languages the world's crack and rubble draws now go through -
 ## the `ground_shadow.gd` case exactly. Raised to 208 for `game_settings.gd`
 ## and `accessibility_settings_panel.gd`, reached only by `GameSettings` and
-## `AccessibilitySettingsPanel.new()` from the menu and the world.
-const EXPECTED_EXPORT_RESOURCE_COUNT: int = 208
+## `AccessibilitySettingsPanel.new()` from the menu and the world. Raised to
+## 212 for the world composition: `world_composition.tres` and the three
+## Resource scripts it is written in, named here although the map's preload
+## already reaches them, because the whole world's layout now depends on them.
+const EXPECTED_EXPORT_RESOURCE_COUNT: int = 212
 ## Derived rather than authored beside it. The dependency scene retains every
 ## resource in the closure plus the closure manifest itself, so a second hand
 ## written number here could only ever drift away from the first one.
