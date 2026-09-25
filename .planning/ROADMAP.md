@@ -14,6 +14,7 @@ Brownfield visual + map-composition milestone. Core value: at 480×270 the world
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Map Audit + Redesign Contract** - Census the 14×14 map and write the contract; zero world-authoring code (completed 2026-09-19)
+- [x] **Phase 1.1: Repo and Gate Hygiene** (INSERTED) - Clone-reproducible gates, CI, legacy archive, HUD chip fix, lean CLAUDE.md (completed 2026-09-25)
 - [ ] **Phase 2: Authored Skeleton** - Consume composition data for paths, edges, districts, nodes, landmarks inside locked extents
 - [ ] **Phase 3: Readable Road Hierarchy** - Asphalt spine, dirt branch, and wilderness perimeter read as the loop's path at 1×
 - [ ] **Phase 4: District Jobs** - Kaupunki choke, Ostari salvage, Kylät quiet, Metsä threat read without labels
@@ -51,6 +52,21 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [x] 01-03-PLAN.md — CONT-01 proof: heading checklist, live-constant table vs RESEARCH census, empty src/world/ git path filter
+
+### Phase 1.1: Repo and Gate Hygiene (INSERTED)
+
+**Goal**: Every gate runs green from a fresh clone and on every push, before Phase 2 starts moving the world
+**Depends on**: Phase 1
+**Requirements**: none new (supports PROOF-01, PROOF-02)
+**Success Criteria** (all met 2026-09-25):
+
+  1. `scenes/build/runtime_export_dependencies.tscn` is committed and generated from `data/runtime_export_closure.json`; the unanchored `build/` ignore rule no longer swallows it
+  2. `tools/ci/run_gates.sh` and `.github/workflows/gates.yml` run import, 21 headless gates, 3 ENet probes, and 17 Mobile/Vulkan capture gates; capture gates must report the Mobile renderer
+  3. The unused legacy 2D catalog is archived under `tools/legacy/` with no deletion; vault-dependent hash checks skip by name without `Addons/`
+  4. The wave chip no longer clips or contradicts itself, and the HUD gate measures chip text fit
+  5. CLAUDE.md sections 7-9 live verbatim in `docs/art-log/`; stale gate counts are refreshed
+
+**Plans**: executed directly on request (no PLAN files)
 
 ### Phase 2: Authored Skeleton
 
@@ -170,11 +186,12 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
+Phases execute in numeric order: 1 → 1.1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Map Audit + Redesign Contract | 3/3 | Complete    | 2026-09-19 |
+| 1.1 Repo and Gate Hygiene (INSERTED) | - | Complete | 2026-09-25 |
 | 2. Authored Skeleton | 0/TBD | Not started | - |
 | 3. Readable Road Hierarchy | 0/TBD | Not started | - |
 | 4. District Jobs | 0/TBD | Not started | - |

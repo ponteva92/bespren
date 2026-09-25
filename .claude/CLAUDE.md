@@ -82,14 +82,14 @@ Players should always know which district they are in. A 30-second salvage run s
 - Bake isolation:
 - `project.godot` - App name Bespren, main scene `res://scenes/ui/StartMenu.tscn`, Mobile features, viewport, input map, physics layers, mobile renderer, ETC2/ASTC VRAM compression
 - `export_presets.cfg` - Single Android preset, `com.bespren.game`, version `0.1.0`, arm64-v8a only, immersive, internet permission, scene-filter export of `StartMenu.tscn` + `game_world.tscn` + `runtime_export_dependencies.tscn`
-- Exclude filter: `Addons/*,artifacts/asset_audit/extraction_runs/*,assets/2d/catalog/*,assets/2d/props/*`
-- `data/runtime_export_closure.json` + `scenes/build/runtime_export_dependencies.tscn` - Hand-maintained runtime resource pin (201 resources / 202 strong deps)
+- Exclude filter: `Addons/*,artifacts/asset_audit/extraction_runs/*,tools/legacy/*`
+- `data/runtime_export_closure.json` + `scenes/build/runtime_export_dependencies.tscn` - Runtime resource pin (204 resources / 205 strong deps). The closure is hand-maintained; the scene is generated from it by `tools/asset_pipeline/build_runtime_export_dependencies.gd`
 - `gdscript/warnings/untyped_declaration=2` - Untyped declarations are errors. Keep every new script typed
 - Texture import: actor sheets VRAM-compress with `process/fix_alpha_border=true`; resource SVGs generate mipmaps (`assets/2d/resources/*.svg.import`)
 
 ## Platform Requirements
 
-- Windows host with Godot 4.7.1 (console binary used for `--headless --script`)
+- Godot 4.7.1 on Windows (console binary) or Linux; `tools/ci/run_gates.sh` runs every gate, and `.github/workflows/gates.yml` runs it in CI on Linux with Mesa lavapipe
 - Blender `C:\Program Files\Blender Foundation\Blender 5.0\blender.exe` for rebakes (`tools/art/run_wild_bake.py`)
 - Python 3.11+ with Pillow for sheet packing / audits; NumPy available inside Blender for terrain/wild pixel ops
 - Android SDK + JDK only when configuring/exporting APKs
@@ -132,7 +132,7 @@ Players should always know which district they are in. A 30-second salvage run s
 - `environment/terrain/` - `polyhaven_terrain_atlas.png` + `bespren_biome_blend_mask.png`
 - `resources/` - Wood/Metal/Tech SVG masters
 - `effects/` - Base Core / radial light SVGs
-- Catalog/prop/enemy pixel-art trees under `assets/2d/catalog`, `props`, `enemies`, `bosses` are vault derivatives; Android exclude filter drops catalog/props. Do not add new shipping art there
+- The old catalog/prop/enemy/boss pixel-art trees are archived under `tools/legacy/asset_catalog_2d/` behind `.gdignore` (2026-09-25). Do not add shipping art there
 - Isolated Blender scene policy: never mutate the user's default scene
 - Shared rig: `tools/art/aaa_bake_rig.py` — elevation 52°, azimuth −45°, AgX Medium High Contrast, Freestyle, 4× supersample
 - Character/camp generators write PNG then `tools/art/write_generated_asset_manifest.py`

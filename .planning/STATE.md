@@ -6,9 +6,9 @@ current_phase: 2
 current_phase_name: Authored Skeleton
 status: verifying
 stopped_at: Completed 01-03-PLAN.md
-last_updated: "2026-09-19T23:17:48.456Z"
-last_activity: 2026-09-19
-last_activity_desc: Phase 01 complete, transitioned to Phase 2
+last_updated: "2026-09-25T14:00:00.000Z"
+last_activity: 2026-09-25
+last_activity_desc: Phase 1.1 (inserted) repo and gate hygiene complete; Phase 2 ready to plan
 progress:
   total_phases: 9
   completed_phases: 1
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-18)
 
 **Core value:** At 480×270, the world reads as authored places with a visible salvage loop — never as generated scatter on a grid.
-**Current focus:** Phase 01 — map-audit-redesign-contract
+**Current focus:** Phase 2 — Authored Skeleton
 
 ## Current Position
 
 Phase: 2 — Authored Skeleton
 Plan: Not started
-Status: Phase complete — ready for verification
-Last activity: 2026-09-19 — Phase 01 complete, transitioned to Phase 2
+Status: Ready to plan (Phase 1 verified; Phase 1.1 hygiene complete)
+Last activity: 2026-09-25 — Phase 1.1 inserted and completed: export scene committed, CI added, legacy catalog archived, wave chip fixed, CLAUDE.md split
 
 Progress: [█░░░░░░░░░] 11%
 
@@ -79,6 +79,10 @@ Progress: [█░░░░░░░░░] 11%
 - [Phase 01]: CONT-01 proven by heading checklist, live-constant table vs RESEARCH, empty src/world/ path filter — D-25 D-26 D-27 D-28
 - [Phase 01]: LAYOUT_VERSION remains typed const 2; WORLD_BUILD_SEED remains 0xB35E7E — D-28: Phase 1 does not bump layout or seed
 - [Phase 01]: Fifteen camera IDs specified; tests/world_render_validation.gd and .tscn untouched — D-27 cameras are table IDs for Phase 7
+- [Phase 1.1]: Inserted after a full audit (2026-09-25). Hygiene only; no `src/world/` layout, seed, or count changes
+- [Phase 1.1]: `tools/ci/run_gates.sh` + `.github/workflows/gates.yml` are the proof path; Phase 7's noise floor can run there
+- [Phase 1.1]: Legacy 2D catalog archived to `tools/legacy/` (no deletion); gameplay camera zoom 0.38 stays locked
+- [Phase 1.1]: CLAUDE.md sections 7-9 moved verbatim to `docs/art-log/`; matrix to `docs/COMPLETION_MATRIX.md`
 
 ### Pending Todos
 
@@ -87,6 +91,9 @@ None yet.
 ### Blockers/Concerns
 
 - Phase 2: freeze `.tres` schema before WorldMap2D consumption; grep `STARTING_CAMP_POSITION` consumers when camp moves.
+- Phase 2: the composition resource must replace the three independent pocket tables (`world_background_decor_2d.gd`, `world_ambient_scenery_2d.gd`, `world_wilderness_accent_2d.gd`) and both camp literals, not add a fourth; about 20 atlas `Rect2` tables are duplicated across files.
+- Phase 4: `_build_village_east` is `_build_village_west` translated about +16,100 in X; East needs its own layout.
+- Open: `wilderness_ecology_route_validation` fails its fixture card-radius budget at HEAD (review instrument, not in CI).
 - Phase 9: fir canopy mass and salvage-atlas promotion stay art vetoes, not builder work. Device thermals out of this milestone.
 
 ## Deferred Items

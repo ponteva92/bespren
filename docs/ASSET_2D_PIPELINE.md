@@ -1,5 +1,7 @@
 # Bespren 2D Asset Pipeline
 
+> **Archived 2026-09-25.** The broad generated catalog described below had no runtime consumer and depended on the gitignored `_source_imports/`. It now lives, with its gate and tools, under `tools/legacy/asset_catalog_2d/` behind `.gdignore`; `tools/legacy/README.md` explains how to restore it. The source-vault audit and reviewed promotion stages below are still live.
+
 This project keeps source discovery, reviewed promotion, offline rendering, and shipping runtime data as separate stages. The separation is deliberate: `Addons/` remains an immutable source vault, while Android receives only reviewed 2D resources and their provenance records.
 
 ## Source-vault audit
