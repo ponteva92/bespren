@@ -10,8 +10,10 @@ script_templates/
 text_editor_themes/
 
 # Generated / local build
+# Anchored: an unanchored `build/` also swallowed `scenes/build/`, which holds
+# the export dependency scene the Android preset packs.
 artifacts/
-build/
+/build/
 *.apk
 *.aab
 *.pck
