@@ -19,6 +19,12 @@ const EXPECTED_SOURCE_COUNT: int = 29
 const EXPECTED_FRAME_COUNT: int = 16
 const EXPECTED_LICENSE_SOURCE_COUNT: int = 6
 const EXPECTED_FRAME_SIZE: Vector2i = Vector2i(384, 384)
+## The source GLBs and upstream license files live in the gitignored `Addons/`
+## vault, so a clone without it cannot hash them. Their hash checks are skipped
+## by name when the vault is absent rather than failed, so a red run always means
+## something in the repository broke; the structural checks on the same records
+## still run everywhere.
+const VAULT_ROOT: String = "res://Addons"
 
 const CITY_REGIONS: Array[Rect2] = [
 	Rect2(33.0, 10.0, 318.0, 359.0),
@@ -41,6 +47,7 @@ const CAMP_MEDICAL_REGION: Rect2 = Rect2(1153.0, 1199.0, 365.0, 292.0)
 
 var _checks: int = 0
 var _failures: int = 0
+var _skips: int = 0
 
 
 func _initialize() -> void:
@@ -107,26 +114,38 @@ func _validate_manifest(manifest: Dictionary) -> void:
 		"Manifest records the reviewed orthographic RGBA render policy"
 	)
 
+	var vault_present: bool = DirAccess.dir_exists_absolute(VAULT_ROOT)
 	var license_sources: Array = _as_array(manifest.get("license_sources", []))
-	var license_records_valid: bool = license_sources.size() == EXPECTED_LICENSE_SOURCE_COUNT
+	var license_records_structured: bool = license_sources.size() == EXPECTED_LICENSE_SOURCE_COUNT
+	var license_hashes_match: bool = license_records_structured
 	for record_variant: Variant in license_sources:
 		if not (record_variant is Dictionary):
-			license_records_valid = false
+			license_records_structured = false
+			license_hashes_match = false
 			continue
 		var record: Dictionary = record_variant as Dictionary
+		if not _file_record_is_structured(record):
+			license_records_structured = false
 		if not _file_record_matches(record):
-			license_records_valid = false
+			license_hashes_match = false
 	_check(
-		license_records_valid,
+		license_records_structured,
+		"All six upstream license-evidence records name a vault path and a SHA-256"
+	)
+	_check_vault(
+		vault_present,
+		license_hashes_match,
 		"All six upstream license-evidence files match their SHA-256 records"
 	)
 
 	var sources: Array = _as_array(manifest.get("source_assets", []))
 	var source_paths: Dictionary = {}
-	var source_records_valid: bool = sources.size() == EXPECTED_SOURCE_COUNT
+	var source_records_structured: bool = sources.size() == EXPECTED_SOURCE_COUNT
+	var source_hashes_match: bool = source_records_structured
 	for source_variant: Variant in sources:
 		if not (source_variant is Dictionary):
-			source_records_valid = false
+			source_records_structured = false
+			source_hashes_match = false
 			continue
 		var source: Dictionary = source_variant as Dictionary
 		var source_path: String = String(source.get("path", ""))
@@ -140,12 +159,22 @@ func _validate_manifest(manifest: Dictionary) -> void:
 				"atomic_realm_gas_station",
 				"atomic_realm_pharmacy",
 			]
-			or not _file_record_matches(source)
+			or not _file_record_is_structured(source)
 		):
-			source_records_valid = false
+			source_records_structured = false
+		if not _file_record_matches(source):
+			source_hashes_match = false
 	_check(sources.size() == EXPECTED_SOURCE_COUNT, "Manifest records exactly 29 reviewed source models")
 	_check(source_paths.size() == EXPECTED_SOURCE_COUNT, "All 29 source-model paths are unique")
-	_check(source_records_valid, "All 29 source GLBs match their recorded SHA-256 hashes and license families")
+	_check(
+		source_records_structured,
+		"All 29 source records are vault GLBs with a reviewed license family and a SHA-256"
+	)
+	_check_vault(
+		vault_present,
+		source_hashes_match,
+		"All 29 source GLBs match their recorded SHA-256 hashes"
+	)
 
 	var derived_assets: Array = _as_array(manifest.get("derived_assets", []))
 	var derived_keys: Dictionary = {}
@@ -585,6 +614,14 @@ func _region_key(region: Rect2) -> String:
 	return "%d,%d,%d,%d" % [region.position.x, region.position.y, region.size.x, region.size.y]
 
 
+func _file_record_is_structured(record: Dictionary) -> bool:
+	var path: String = String(record.get("path", ""))
+	return (
+		path.begins_with(VAULT_ROOT + "/")
+		and String(record.get("sha256", "")).length() == 64
+	)
+
+
 func _file_record_matches(record: Dictionary) -> bool:
 	var path: String = String(record.get("path", ""))
 	var expected_hash: String = String(record.get("sha256", "")).to_lower()
@@ -631,7 +668,13 @@ func _contains_node_3d(node: Node) -> bool:
 
 func _finish() -> void:
 	if _failures == 0:
-		print("LOCAL ENVIRONMENT VALIDATION OK (%d checks)" % _checks)
+		if _skips > 0:
+			print(
+				"LOCAL ENVIRONMENT VALIDATION OK (%d checks, %d skipped: %s absent)"
+				% [_checks, _skips, VAULT_ROOT]
+			)
+		else:
+			print("LOCAL ENVIRONMENT VALIDATION OK (%d checks)" % _checks)
 		quit(0)
 		return
 	push_error(
@@ -648,3 +691,11 @@ func _check(condition: bool, message: String) -> void:
 		return
 	_failures += 1
 	push_error("FAIL | %s" % message)
+
+
+func _check_vault(vault_present: bool, condition: bool, message: String) -> void:
+	if not vault_present:
+		_skips += 1
+		print("SKIP | %s (%s vault absent)" % [message, VAULT_ROOT])
+		return
+	_check(condition, message)
