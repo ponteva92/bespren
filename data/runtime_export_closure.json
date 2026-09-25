@@ -62,6 +62,10 @@
       "type": "Script"
     },
     {
+      "path": "res://src/core/game_settings.gd",
+      "type": "Script"
+    },
+    {
       "path": "res://src/economy/loot_box_2d.gd",
       "type": "Script"
     },
@@ -135,6 +139,10 @@
     },
     {
       "path": "res://src/ui/start_menu.gd",
+      "type": "Script"
+    },
+    {
+      "path": "res://src/ui/accessibility_settings_panel.gd",
       "type": "Script"
     },
     {

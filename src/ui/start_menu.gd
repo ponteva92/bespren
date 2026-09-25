@@ -36,6 +36,12 @@ const VERTICAL_GAP: float = 4.0
 @onready var refuge_beam_right: Polygon2D = get_node("RefugeBeamRight") as Polygon2D
 
 var selected_character: StringName = &"heikki"
+## Where the accessibility settings persist. A gate points it at a scratch file
+## so validation never touches the player's own.
+var settings_path: String = GameSettings.DEFAULT_PATH
+var options_button: Button
+var _settings: GameSettings
+var _settings_panel: AccessibilitySettingsPanel
 var _bounce_tween: Tween
 var _signal_phase: float = 0.0
 var _validation_safe_area_override: Rect2 = Rect2()
@@ -51,6 +57,7 @@ func _ready() -> void:
 	solo_button.pressed.connect(_launch.bind(CoopSession.SessionMode.SOLO))
 	host_button.pressed.connect(_launch.bind(CoopSession.SessionMode.HOST))
 	join_button.pressed.connect(_launch.bind(CoopSession.SessionMode.CLIENT))
+	_install_accessibility_settings()
 	resized.connect(_on_menu_resized)
 	await get_tree().process_frame
 	_apply_responsive_layout()
@@ -91,7 +98,61 @@ func get_interactive_layout_rects() -> Dictionary:
 		&"solo_button": Rect2(solo_button.position, solo_button.size),
 		&"host_button": Rect2(host_button.position, host_button.size),
 		&"join_button": Rect2(join_button.position, join_button.size),
+		&"options_button": Rect2(options_button.position, options_button.size),
 	}
+
+
+## The OPTIONS button sits at the end of the session row in the menu's own
+## action style, and opens the accessibility sheet over the content rect. The
+## sheet is built once and kept, so reopening it never reloads the file.
+func _install_accessibility_settings() -> void:
+	_settings = GameSettings.load_from_disk(settings_path)
+	var styles: Dictionary = {}
+	for state: StringName in [&"normal", &"hover", &"pressed", &"focus"]:
+		styles[state] = solo_button.get_theme_stylebox(state)
+	options_button = Button.new()
+	options_button.name = &"OptionsButton"
+	options_button.text = "OPTIONS"
+	options_button.tooltip_text = "Camera shake, damage flash, weather and glow pulse"
+	options_button.focus_mode = Control.FOCUS_ALL
+	options_button.add_theme_font_size_override(&"font_size", 9)
+	for state: StringName in styles:
+		options_button.add_theme_stylebox_override(state, styles[state] as StyleBox)
+	add_child(options_button)
+	options_button.pressed.connect(open_settings)
+	_settings_panel = AccessibilitySettingsPanel.new()
+	_settings_panel.setup(
+		_settings,
+		settings_path,
+		session_panel.get_theme_stylebox(&"panel"),
+		styles
+	)
+	_settings_panel.visible = false
+	add_child(_settings_panel)
+	_settings_panel.closed.connect(_on_settings_closed)
+
+
+## Reloads from [member settings_path]; a gate calls it after pointing the
+## menu at a scratch file.
+func reload_settings() -> void:
+	_settings = GameSettings.load_from_disk(settings_path)
+	_settings_panel.setup_settings(_settings, settings_path)
+
+
+func open_settings() -> void:
+	_settings_panel.open_in(_layout_content_rect if _layout_content_rect.has_area() else Rect2(Vector2.ZERO, size))
+
+
+func is_settings_open() -> bool:
+	return _settings_panel != null and _settings_panel.visible
+
+
+func get_settings_panel() -> AccessibilitySettingsPanel:
+	return _settings_panel
+
+
+func _on_settings_closed() -> void:
+	options_button.grab_focus()
 
 
 func _on_menu_resized() -> void:
@@ -304,18 +365,19 @@ func _layout_session_controls(session_rect: Rect2) -> void:
 	)
 	var inner_margin: float = 6.0
 	var control_gap: float = 8.0
+	var options_width: float = MIN_TOUCH_TARGET + 12.0
 	var controls_width: float = maxf(0.0, session_rect.size.x - inner_margin * 2.0)
 	var widest_address: float = maxf(
 		MIN_TOUCH_TARGET,
-		controls_width - MIN_TOUCH_TARGET * 3.0 - control_gap * 3.0
+		controls_width - MIN_TOUCH_TARGET * 3.0 - options_width - control_gap * 4.0
 	)
 	var address_width: float = minf(
-		clampf(controls_width * 0.33, 132.0, 154.0),
+		clampf(controls_width * 0.30, 120.0, 146.0),
 		widest_address
 	)
 	var action_width: float = maxf(
 		0.0,
-		(controls_width - address_width - control_gap * 3.0) / 3.0
+		(controls_width - address_width - options_width - control_gap * 4.0) / 3.0
 	)
 	var control_y: float = session_rect.position.y + session_rect.size.y - MIN_TOUCH_TARGET - 1.0
 	var address_x: float = session_rect.position.x + inner_margin
@@ -326,6 +388,13 @@ func _layout_session_controls(session_rect: Rect2) -> void:
 	_set_control_rect(solo_button, Rect2(Vector2(solo_x, control_y), Vector2(action_width, MIN_TOUCH_TARGET)))
 	_set_control_rect(host_button, Rect2(Vector2(host_x, control_y), Vector2(action_width, MIN_TOUCH_TARGET)))
 	_set_control_rect(join_button, Rect2(Vector2(join_x, control_y), Vector2(action_width, MIN_TOUCH_TARGET)))
+	if options_button != null:
+		_set_control_rect(
+			options_button,
+			Rect2(Vector2(join_x + action_width + control_gap, control_y), Vector2(options_width, MIN_TOUCH_TARGET))
+		)
+	if is_settings_open():
+		_settings_panel.open_in(_layout_content_rect)
 
 
 func _layout_refuge_beams() -> void:

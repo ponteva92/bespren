@@ -74,6 +74,14 @@ const SHAKE_GAME_OVER: float = 0.85
 var requested_mode: int = CoopSession.SessionMode.SOLO
 var selected_character: StringName = &"heikki"
 var host_address: String = "127.0.0.1"
+## Where the player's accessibility settings are read from. A gate points it at
+## a scratch file before the node enters the tree.
+var settings_path: String = GameSettings.DEFAULT_PATH
+
+var _settings: GameSettings = GameSettings.new()
+## True only while this node itself paused the tree for a backgrounded app, so
+## returning to the foreground never unpauses something else's pause.
+var _paused_for_background: bool = false
 
 var _players: Dictionary[int, PlayerAvatar] = {}
 var _auto_aim_controllers: Dictionary[int, AutoAimController] = {}
@@ -100,6 +108,7 @@ func configure_launch(mode_value: int, character_id: StringName, address: String
 
 
 func _ready() -> void:
+	apply_settings(GameSettings.load_from_disk(settings_path))
 	world_map.ensure_built()
 	resource_scatter.configure_world_map(world_map)
 	resource_scatter.ensure_scattered()
@@ -268,6 +277,7 @@ func _on_peer_registered(
 	)
 	players_root.add_child(player)
 	_players[peer_id] = player
+	_apply_camera_settings(player)
 	_install_auto_aim_controller(player)
 	player.footfall.connect(_on_player_footfall)
 	combat_state.register_player(player)
@@ -515,6 +525,80 @@ func _on_hud_command_requested(command: StringName) -> void:
 		GameHUD.COMMAND_START_NIGHT:
 			day_night.request_start_night()
 			hud.set_status("NIGHT COMMAND // HOST REQUEST SENT")
+
+
+## Pushes the player's accessibility scales into the nodes this world composes.
+## Each is the scale CLAUDE.md 11 asks for, and each treats zero as absent: the
+## weather pass and the damage wash on the one full-screen overlay, the refuge
+## light's breathing, every emissive pulse through the global shader uniform,
+## and the local survivor's camera shake.
+func apply_settings(settings: GameSettings) -> void:
+	if settings == null:
+		return
+	_settings = settings
+	screen_effects.damage_intensity_scale = settings.get_damage_flash()
+	screen_effects.intensity_scale = settings.get_weather()
+	base_core.pulse_scale = settings.get_pulse()
+	settings.apply_pulse_global()
+	for peer_id: int in _players:
+		_apply_camera_settings(_players[peer_id])
+
+
+func get_settings() -> GameSettings:
+	return _settings
+
+
+func _apply_camera_settings(player: PlayerAvatar) -> void:
+	if not is_instance_valid(player):
+		return
+	var shake: CameraShake2D = player.get_camera_shake()
+	if shake != null:
+		shake.intensity_scale = _settings.get_camera_shake()
+
+
+## Android backgrounds an app by pausing it and a desktop window loses focus;
+## both reach here. Held touches are released in every mode, because the finger
+## that owned the stick is gone and the survivor must not keep walking into the
+## horde on a stale vector. Only Solo pauses the tree: a LAN host that paused
+## would stall its client's authoritative snapshots, and host-side pause with a
+## client grace window changes the protocol, which is the device-certification
+## phase's to decide (CLAUDE.md 6, 14).
+func _notification(what: int) -> void:
+	match what:
+		NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT:
+			_on_backgrounded()
+		NOTIFICATION_APPLICATION_RESUMED, NOTIFICATION_APPLICATION_FOCUS_IN:
+			_on_foregrounded()
+
+
+func is_paused_for_background() -> bool:
+	return _paused_for_background
+
+
+func _on_backgrounded() -> void:
+	if not is_inside_tree() or not is_node_ready():
+		return
+	controls.reset_touches()
+	if _session_active:
+		session.submit_movement(Vector2.ZERO)
+		_last_sent_movement = Vector2.ZERO
+	if session.mode == CoopSession.SessionMode.SOLO and not get_tree().paused:
+		get_tree().paused = true
+		_paused_for_background = true
+
+
+func _on_foregrounded() -> void:
+	if not _paused_for_background or not is_inside_tree():
+		return
+	_paused_for_background = false
+	get_tree().paused = false
+
+
+func _exit_tree() -> void:
+	# Leaving the world while it holds its own pause must not strand the menu.
+	if _paused_for_background and get_tree() != null:
+		get_tree().paused = false
+		_paused_for_background = false
 
 
 func _on_back_pressed() -> void:

@@ -9,6 +9,7 @@ extends Control
 const HEIKKI_OUTPUT_PATH: String = "res://artifacts/start_menu_heikki_validation.png"
 const SHANE_OUTPUT_PATH: String = "res://artifacts/start_menu_shane_validation.png"
 const SAFE_INSET_OUTPUT_PATH: String = "res://artifacts/start_menu_safe_inset_validation.png"
+const ACCESSIBILITY_OUTPUT_PATH: String = "res://artifacts/start_menu_accessibility_validation.png"
 const METADATA_PATH: String = "res://artifacts/start_menu_render_validation.json"
 const LOGICAL_CAPTURE_SIZE: Vector2i = Vector2i(480, 270)
 const SYNTHETIC_SAFE_RECT: Rect2 = Rect2(16.0, 8.0, 448.0, 254.0)
@@ -40,9 +41,18 @@ func _ready() -> void:
 	var safe_inset_captured: bool = await _capture(SAFE_INSET_OUTPUT_PATH)
 	if not safe_inset_captured:
 		return
+	# The accessibility sheet, open over the same inset content rect.
+	menu.open_settings()
+	await get_tree().process_frame
+	if not menu.is_settings_open():
+		_fail("the OPTIONS sheet did not open")
+		return
+	var accessibility_captured: bool = await _capture(ACCESSIBILITY_OUTPUT_PATH)
+	if not accessibility_captured:
+		return
 	_store_metadata(default_safe_rect)
 	print(
-		"START MENU RENDER OK | method=%s | driver=%s | captures=3"
+		"START MENU RENDER OK | method=%s | driver=%s | captures=4"
 		% [
 			RenderingServer.get_current_rendering_method(),
 			RenderingServer.get_current_rendering_driver_name(),
@@ -140,7 +150,7 @@ func _store_metadata(default_safe_rect: Rect2) -> void:
 		"logical_size": [480, 270],
 		"native_capture_size": [_native_capture_size.x, _native_capture_size.y],
 		"native_capture_scale": _native_capture_scale,
-		"outputs": [HEIKKI_OUTPUT_PATH, SHANE_OUTPUT_PATH, SAFE_INSET_OUTPUT_PATH],
+		"outputs": [HEIKKI_OUTPUT_PATH, SHANE_OUTPUT_PATH, SAFE_INSET_OUTPUT_PATH, ACCESSIBILITY_OUTPUT_PATH],
 		"review_states": ["heikki_selected", "shane_selected", "shane_selected_safe_inset"],
 		"art_direction": "original vector survivor identity fields; no raw Addons UI or portrait asset promoted",
 		"device_safe_rect": _rect_to_array(default_safe_rect),

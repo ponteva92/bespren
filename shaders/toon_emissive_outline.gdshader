@@ -45,9 +45,14 @@ uniform float emission_strength : hint_range(0.0, 3.0) = 0.55;
 uniform float emission_gate_low : hint_range(0.0, 1.0) = 0.25;
 uniform float emission_gate_high : hint_range(0.0, 1.0) = 0.75;
 uniform float pulse_speed : hint_range(0.0, 8.0) = 2.0;
+// Accessibility scale for every emissive pulse in the game, set from the
+// player's settings by GameSettings.apply_pulse_global (CLAUDE.md 11). One
+// means the authored pulse, zero means none - the value holds at the pulse's
+// own mean, so turning it off changes motion and never brightness.
+global uniform float bespren_pulse_amount;
 
 void fragment() {
-	float pulse = 0.76 + 0.24 * sin(TIME * pulse_speed);
+	float pulse = 0.76 + 0.24 * bespren_pulse_amount * sin(TIME * pulse_speed);
 	float animated_outline_width = outline_width * (0.9 + pulse * 0.1);
 	// fwidth(UV) is how far UV moves across one rendered fragment, so the tap
 	// lands one screen pixel out whatever the sprite's scale; the stretch term

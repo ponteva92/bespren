@@ -44,8 +44,10 @@ const EXPECTED_FRAME_COUNT: int = 8
 ## shape: a resource reached by name rather than by reference. Raised to 206
 ## for `ground_fissure.gd` and `ground_rubble.gd`, the two static-only
 ## `class_name` languages the world's crack and rubble draws now go through -
-## the `ground_shadow.gd` case exactly.
-const EXPECTED_EXPORT_RESOURCE_COUNT: int = 206
+## the `ground_shadow.gd` case exactly. Raised to 208 for `game_settings.gd`
+## and `accessibility_settings_panel.gd`, reached only by `GameSettings` and
+## `AccessibilitySettingsPanel.new()` from the menu and the world.
+const EXPECTED_EXPORT_RESOURCE_COUNT: int = 208
 ## Derived rather than authored beside it. The dependency scene retains every
 ## resource in the closure plus the closure manifest itself, so a second hand
 ## written number here could only ever drift away from the first one.

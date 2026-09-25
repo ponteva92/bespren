@@ -95,6 +95,14 @@ const DESTROYED_GLOW_SCALE_AMOUNT: float = 0.045
 @export_range(0.2, 6.0, 0.1) var pulse_speed: float = 1.75
 @export_range(0.0, 3.0, 0.05) var base_energy: float = 1.05
 @export_range(0.0, 2.0, 0.05) var pulse_energy: float = 0.34
+## The accessibility scale for the light's breathing, set from the player's
+## settings (CLAUDE.md 11). The light holds the pulse's own mean at zero, so the
+## refuge stops breathing without dimming; the aura and glow shaders read the
+## same setting through the `bespren_pulse_amount` global.
+var pulse_scale: float = 1.0:
+	set(value):
+		pulse_scale = clampf(value, 0.0, 1.0) if is_finite(value) else 1.0
+		_refresh_light_energy()
 
 var _phase: float = 0.0
 var _light: PointLight2D
@@ -270,7 +278,7 @@ func _set_shader_parameter(sprite: Sprite2D, parameter: StringName, value: Varia
 func _refresh_light_energy() -> void:
 	if _light != null:
 		_light.energy = (
-			base_energy + (sin(_phase) * 0.5 + 0.5) * pulse_energy
+			base_energy + (0.5 + sin(_phase) * 0.5 * pulse_scale) * pulse_energy
 		) * _tier_light_energy_scale
 
 

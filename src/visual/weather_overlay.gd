@@ -31,6 +31,16 @@ enum WeatherPreset {
 ## than merely dimmer - the uniform is never written above zero at all.
 @export_range(0.0, 1.0, 0.01) var damage_intensity_scale: float = 1.0
 
+## The accessibility scale on the weather itself - rain, ash and storm tint -
+## set from the player's settings (CLAUDE.md 11). It multiplies the preset's
+## authored `intensity`, and zero removes the weather from the one full-screen
+## pass while leaving the damage wash, which has its own scale above.
+var intensity_scale: float = 1.0:
+	set(value):
+		intensity_scale = clampf(value, 0.0, 1.0) if is_finite(value) else 1.0
+		if _shader_material != null:
+			_shader_material.set_shader_parameter(&"intensity", get_effective_intensity())
+
 var _shader_material: ShaderMaterial
 var _damage: float = 0.0
 
@@ -59,6 +69,10 @@ func flash(amount: float) -> void:
 
 func get_damage_wash() -> float:
 	return _damage
+
+
+func get_effective_intensity() -> float:
+	return intensity * intensity_scale
 
 
 ## Clear immediately, for a respawn or a session teardown, where leaving a red
@@ -98,7 +112,7 @@ func _apply_preset() -> void:
 			tint = Color("704526")
 			wind = 0.88
 	unique_material.set_shader_parameter(&"storm_tint", tint)
-	unique_material.set_shader_parameter(&"intensity", intensity)
+	unique_material.set_shader_parameter(&"intensity", get_effective_intensity())
 	unique_material.set_shader_parameter(&"wind", wind)
 	unique_material.set_shader_parameter(&"damage", _damage)
 	material = unique_material

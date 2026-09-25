@@ -38,6 +38,7 @@ HEADLESS_GATES=(
 	polyhaven_district_validation
 	polyhaven_environment_validation
 	resource_scatter_validation
+	settings_lifecycle_validation
 	start_menu_layout_validation
 	structure_readability_validation
 	tactical_hud_validation
