@@ -17,7 +17,7 @@ Brownfield visual + map-composition milestone. Core value: at 480×270 the world
 - [x] **Phase 1.1: Repo and Gate Hygiene** (INSERTED) - Clone-reproducible gates, CI, legacy archive, HUD chip fix, lean CLAUDE.md (completed 2026-09-25)
 - [x] **Phase 2: Authored Skeleton** - Consume composition data for paths, edges, districts, nodes, landmarks inside locked extents (completed 2026-09-25; resource nodes stay seeded until Phase 5)
 - [x] **Phase 3: Readable Road Hierarchy** - Asphalt spine, dirt branch, and wilderness perimeter read as the loop's path at 1× (completed 2026-09-25)
-- [ ] **Phase 4: District Jobs** - Kaupunki choke, Ostari salvage, Kylät quiet, Metsä threat read without labels
+- [x] **Phase 4: District Jobs** - Kaupunki choke, Ostari salvage, Kylät quiet, Metsä threat read without labels (completed 2026-09-25; Ostari's missing-tooth approach carried to Phase 6)
 - [ ] **Phase 5: Camp Clearing + Salvage Pockets** - Camp is a clearing; 87 IDs sit in co-authored pockets
 - [ ] **Phase 6: Hero Set Pieces** - Unique silhouettes at nodes; adjacent variety by construction, not `index % 8`
 - [ ] **Phase 7: Capture Cameras + Canonical Gates** - Cameras on loop beats; noise floor measured; simulation untouched
@@ -113,9 +113,14 @@ Plans:
   3. Player entering Kylät can tell it is village quiet (yards, timber, rest rhythm) without a label
   4. Player entering Metsä can tell it is forest threat (canopy wall, sparse mass, camp as the clearing) without a label
 
-**Plans**: TBD
+**Plans**: executed directly on request (no PLAN files); record in `docs/POLISH_PLAN_2026-09-25.md` section 6.
 
-**Progress (2026-09-25 polish pass):** Criteria 3 and 4 have partial evidence. East Kylät now has its own job (hamlet plus walled grave plot, `38b4669`), and Metsä reads as forest at 0.38 through the understory and its canopy wall around the camp bowl (`895e376`). Kaupunki (criterion 1) is still a flat street at 1×. Ostari (criterion 2) lost its display-case foundation (`05fc122`), but its approach was not reworked. The fir canopy mass (FIR-01) still needs a bake.
+**Outcome (2026-09-25):**
+
+1. Kaupunki: 15 street-wall shells put a building face in frame along 79.3 % of the spine (was 0.0 %). The `city_choke` landmark on the spine is an unbroken, square pinch at 360 units. Pavements, kerbs, drains and a choke rubble spill are drawn by `WorldUrbanFabric2D`. The tour's `city_street` goes from 10.5 % to 22.7 % occupancy, and the choke frame reads 35.3 %.
+2. Ostari: a 34-bay car park with five abandoned cars reads as mall salvage at 1×. The narrow approach exists only in collision (two gaps of about 1,000 units round the west pylon). Its missing-tooth reading is the mall gate, carried to Phase 6 (SETP-01).
+3. Kylät: East has its own job (hamlet and grave plot, `38b4669`). `WorldVillageYards2D` gives 7 of 8 houses a yard with apron, trail, woodpile, plot and washing, while the west yard's middle stays negative space. The fence silhouette (D-15) still needs a bake.
+4. Metsä: the understory and canopy wall from the polish pass carry it. Canopy mass (FIR-01) still needs a bake.
 
 ### Phase 5: Camp Clearing + Salvage Pockets
 
@@ -202,7 +207,7 @@ Phases execute in numeric order: 1 → 1.1 → 2 → 3 → 4 → 5 → 6 → 7 �
 | 1.1 Repo and Gate Hygiene (INSERTED) | - | Complete | 2026-09-25 |
 | 2. Authored Skeleton | - | Complete | 2026-09-25 |
 | 3. Readable Road Hierarchy | - | Complete | 2026-09-25 |
-| 4. District Jobs | 0/TBD | Partial evidence (Kylät, Metsä) | - |
+| 4. District Jobs | - | Complete (Ostari approach → Phase 6) | 2026-09-25 |
 | 5. Camp Clearing + Salvage Pockets | 0/TBD | Partial evidence (camp clearing) | - |
 | 6. Hero Set Pieces | 0/TBD | Not started | - |
 | 7. Capture Cameras + Canonical Gates | 0/TBD | Not started | - |

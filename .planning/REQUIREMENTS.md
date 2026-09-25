@@ -10,13 +10,13 @@ Requirements for this milestone. Each maps to roadmap phases.
 ### Map Contract
 
 - [x] **CONT-01**: Team can audit the current 14×14 map (captures, density, pocket/obstacle overlaps, 1× unreadables) and write a redesign contract in `docs/` that names camp, roads, district jobs, landmarks, salvage/threat pockets, 30s-loop beats, way-home language, exclusion volumes, and capture cameras — with zero world-authoring code in that phase
-- [ ] **CONT-02**: Playable extents stay 14×14 cells / ±14,336; camp, roads, obstacles, and resources may relocate to serve the contract
+- [x] **CONT-02**: Playable extents stay 14×14 cells / ±14,336; camp, roads, obstacles, and resources may relocate to serve the contract
 
 ### Authored Skeleton
 
 - [ ] **SKEL-01**: Player traverses an authored skeleton of paths, edges, districts, nodes, and landmarks stored as composition data — not biome cell IDs or seeded scatter
-- [ ] **DIST-01**: Player can tell each district's job at 1× without a label: Kaupunki city choke, Ostari mall salvage, Kylät village quiet, Metsä forest threat
-- [ ] **ROAD-01**: Player can read road hierarchy at 1× (asphalt spine vs dirt branch vs wilderness perimeter) as the loop's path, not only as polylines in code
+- [x] **DIST-01**: Player can tell each district's job at 1× without a label: Kaupunki city choke, Ostari mall salvage, Kylät village quiet, Metsä forest threat
+- [x] **ROAD-01**: Player can read road hierarchy at 1× (asphalt spine vs dirt branch vs wilderness perimeter) as the loop's path, not only as polylines in code
 
 ### Loop and Readability
 
@@ -99,10 +99,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | CONT-01 | Phase 1 | Complete |
-| CONT-02 | Phase 2 | Pending |
-| SKEL-01 | Phase 2 | Pending |
-| DIST-01 | Phase 4 | Pending |
-| ROAD-01 | Phase 3 | Pending |
+| CONT-02 | Phase 2 | Complete |
+| SKEL-01 | Phase 2 | Partial: paths, edges, districts and landmarks are composition data; nodes stay seeded until SLVG-01 |
+| DIST-01 | Phase 4 | Complete (Ostari's missing-tooth approach carried to SETP-01) |
+| ROAD-01 | Phase 3 | Complete |
 | LOOP-01 | Phase 8 | Pending |
 | READ-01 | Phase 8 | Pending |
 | READ-02 | Phase 8 | Pending |
@@ -121,4 +121,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-09-18*
-*Last updated: 2026-09-19 after roadmap creation*
+*Last updated: 2026-09-25 after Phases 2-4*

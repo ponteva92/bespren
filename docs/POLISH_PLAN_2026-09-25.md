@@ -115,3 +115,45 @@ Occupancy is measured as in section 1.3. "Before" is the baseline tour at `db062
 - **LAN host pause.** A backgrounded host releases touches but does not pause, because pausing would stall its client's snapshots. A grace window is a protocol change, and it stays with device certification.
 - **Kaupunki and the far wilderness** are still sparse at 1×. That is Phase 4's district-job work, and the contract wants the wilderness quiet.
 
+
+## 6. Follow-up: roadmap Phase 4, district jobs
+
+Requested after section 5 as "implement". The Blender and Poly Haven hosts were still refused (403 on CONNECT), so the next unblocked item was roadmap Phase 4 (DIST-01): each district's job readable at 1× without a label.
+
+### 6.1 What shipped
+
+| District | What changed at 1× | Gate evidence |
+|---|---|---|
+| Kaupunki: city choke | 15 `CityStreetWall_*` shells line the asphalt spine with faces on a kerb line 420 units off the centreline, broken by alleys. A shallow storefront stands in front of each set-back ruin. The `city_choke` landmark moves onto the spine at (-8192, -8950), where both frontages step in to 360 and run unbroken for the landmark's 1,200-unit diameter. Built after every other obstacle, so no stable seed moved. | World map: frontage in frame along 79.3 % of the spine (was 0.0 %), both sides ≥ 45 %, the choke unbroken and square, no wall on a road or another footprint, and neither spine flow column blocked. Flow hash re-pinned on purpose |
+| Kaupunki: street fabric | `WorldUrbanFabric2D` adds pavements with slab joints, broken slabs, weeds and drains, a lit kerb over a gutter shadow, and a rubble spill across the west pavement at the choke. Visual only, at z -20 after the roads. | World map: pavement between bed and kerb line, spill off the carriageway, no physics |
+| Ostari: mall salvage | Two rows of 17 parking bays either side of the mall road, with worn paint, wheel stops, oil stains and an asphalt wash; five abandoned cars stand askew across them, always drawn as cars. | World map: 34 bays, rows off the road and clear of every shell, pylon and ruin, 5 cars in bays with the car frame |
+| Kylät: village quiet | `WorldVillageYards2D` gives 7 of 8 village houses a yard: trodden apron, worn trail, woodpile with chopping block, fenced furrow plot, washing line. Every item is placed on open ground only. | World map: 7 of 8 yards, 6 woodpiles, 2 plots, every item clear of footprints and roads, no physics |
+| Metsä: forest threat | No change in this phase: the understory and canopy wall from P3 already carry it. | – |
+
+Two couplings were fixed at their source. The ambient scenery now seeds each zone on its own (with one shared stream, the city walls had re-dealt the forest and camp dress). The wild-atlas context gate now tests building-class obstacles against `WorldObstacle2D.get_visual_bounds()`, because pocket 2 briefly passed with its card hidden behind an Ostari chain-link panel. The tour gate clears its old captures before writing. Details are in `docs/art-log/16-world.md`.
+
+Gates: **47/47**. World map 226 → 252; tour 25 → 29 captures (new stops: city frontage, city choke at night, mall car park, west homestead); wild-atlas context unchanged at `pockets=9 | unhostable=1 | captures=36`. Every other count is unchanged.
+
+### 6.2 Before and after at the gameplay zoom
+
+"Before" is the tour at `bef4a27`. `city_choke` moved with its landmark, so its "before" is the old seat at (-9200, -6000).
+
+| Stop | Before | After | Frame verdict |
+|---|---:|---:|---|
+| city_street | 10.5 % | 22.7 % | Pavements, kerbs and drains on both sides, a building on each kerb |
+| city_choke | 7.0 % | 35.3 % | The street pinched between two unbroken frontages, debris across the west pavement |
+| city_choke_night | – | 18.2 % | Pavement, kerb and spill fall to the blue hour with the ground |
+| city_frontage | – | 20.5 % | Walls on both sides broken by an alley |
+| city_block | 5.3 % | 5.3 % | Unchanged: the large blocks are still oversized single bakes (Phase 6/9) |
+| mall_car_park | – | 22.8 % | Reads as a car park: bays, wheel stops, oil stains, an abandoned pickup askew |
+| mall_corridor | 22.7 % | 19.0 % | The mall road with the bay mouths at the frame edges; the asphalt wash lowers local contrast |
+| west_homestead | – | 8.6 % | Woodpile with chopping block and a fenced furrow plot. Low occupancy, because furrows are low-contrast detail |
+| east_hamlet | 17.5 % | 18.9 % | Woodpile, chopping block and washing line beside the hamlet house |
+
+Rendered with and without the street walls against a second same-code run, stops outside Kaupunki change within the tour's same-code floor (0 to 0.4 %, camp frames 4 to 5 % from the light pulse).
+
+### 6.3 Not done, and why
+
+- **Ostari's narrow approach** exists only in collision: two gaps of about 1,000 units round the west pylon. The contract's reading of it, the missing-tooth mall gate, is a hero set piece and is carried to Phase 6 (SETP-01).
+- **Kaupunki's six large blocks** still draw as single oversized bakes that read as dark slabs at 1× from the back lots.
+- **Bakes**: FIR-01, TINT-01 and the D-15 fence are still blocked on the network policy.
