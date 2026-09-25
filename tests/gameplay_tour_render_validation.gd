@@ -101,7 +101,9 @@ func _build_stops() -> Array[Dictionary]:
 		_stop(&"road_shoulder", Vector2(2100.0, 0.0), false, "Asphalt spine shoulder"),
 		_stop(&"dirt_branch", Vector2(-8192.0, 6000.0), false, "Village dirt branch"),
 		_stop(&"perimeter_track", Vector2(12288.0, -2000.0), false, "Wilderness perimeter"),
-		_stop(&"forest_interior", Vector2(-12000.0, 3000.0), false, "Metsa interior"),
+		_stop(&"forest_interior", Vector2(-10500.0, 2400.0), false, "Metsa interior, 1,500 units off any road"),
+		_stop(&"forest_edge_track", Vector2(-12000.0, 3000.0), false, "Metsa beside the perimeter track"),
+		_stop(&"metsa_near_camp", Vector2(11000.0, -3000.0), false, "Metsa north of the camp bowl"),
 		_stop(&"wilderness", Vector2(-5200.0, 1800.0), false, "Far wilderness belt"),
 		_stop(&"wilderness_night", Vector2(-5200.0, 1800.0), true, "Far wilderness at night"),
 	]

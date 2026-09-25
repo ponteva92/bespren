@@ -136,6 +136,8 @@ func _run() -> void:
 	_validate_collision_contract(world_map)
 	_validate_flow_field(world_map)
 	_validate_motion_resolver(world_map)
+	_validate_forest_understory(world_map)
+	_validate_camp_clearing(world_map)
 
 	world_map.queue_free()
 	await process_frame
@@ -1324,6 +1326,140 @@ func _distance_to_routes(point: Vector2, routes: Array[PackedVector2Array]) -> f
 			)
 			shortest = minf(shortest, point.distance_to(closest))
 	return shortest
+
+
+## The understory exists because the gameplay tour found Metsa empty at the
+## zoom the game ships, so the check that matters most is that one: a gameplay
+## frame over forest ground, clear of roads and the camp bowl, now holds a
+## forest's worth of subjects. The rest pins that it stays a dress layer.
+func _validate_forest_understory(world_map: BesprenWorldMap2D) -> void:
+	var understory: WorldForestUnderstory2D = world_map.forest_understory
+	_check(understory != null, "World map owns the forest understory layer")
+	if understory == null:
+		return
+	_check_absolute_z(understory, EXPECTED_AMBIENT_SCENERY_Z, "Forest understory")
+	var count: int = understory.get_element_count()
+	_check(
+		count >= WorldForestUnderstory2D.MINIMUM_ELEMENT_COUNT
+		and count <= WorldForestUnderstory2D.MAXIMUM_ELEMENT_COUNT,
+		"Forest understory places %d elements inside its authored bounds" % count
+	)
+	_check(
+		understory.get_chunked_element_count() == count,
+		"Every understory element is drawn by exactly one render chunk"
+	)
+	_check(not _subtree_has_physics(understory), "Forest understory owns no physics")
+	var every_chunk_is_lit: bool = not understory.get_render_chunks().is_empty()
+	for chunk: Node2D in understory.get_render_chunks():
+		var grade: ShaderMaterial = chunk.material as ShaderMaterial
+		if (
+			grade == null
+			or grade.shader == null
+			or grade.shader.code.contains("render_mode unshaded")
+			or chunk.z_index != EXPECTED_AMBIENT_SCENERY_Z
+		):
+			every_chunk_is_lit = false
+	_check(every_chunk_is_lit, "Understory chunks draw at the ambient z through the lit canvas grade")
+	var positions: PackedVector2Array = understory.get_element_positions()
+	var radii: PackedFloat32Array = understory.get_element_visual_radii()
+	var camp: Vector2 = BesprenWorldMap2D.STARTING_CAMP_POSITION
+	var every_element_is_clear: bool = positions.size() == radii.size()
+	var bowl_is_empty: bool = true
+	for index: int in range(mini(positions.size(), radii.size())):
+		var element: Vector2 = positions[index]
+		if not world_map.is_position_walkable(element, radii[index]):
+			every_element_is_clear = false
+		if world_map.get_minimum_road_edge_distance(element) < (
+			WorldForestUnderstory2D.ROAD_EDGE_CLEARANCE + radii[index] - 0.01
+		):
+			every_element_is_clear = false
+		if element.distance_to(camp) < WorldForestUnderstory2D.CLEARING_RADIUS:
+			bowl_is_empty = false
+	_check(every_element_is_clear, "No understory element overlaps a colliding footprint or a road verge")
+	_check(bowl_is_empty, "The camp bowl holds no understory inside %.0f units" % WorldForestUnderstory2D.CLEARING_RADIUS)
+	_check(
+		understory.get_rim_element_count() >= 100,
+		"The bowl's rim carries a wall of %d understory elements" % understory.get_rim_element_count()
+	)
+	# Forest frames at the gameplay zoom: 1,263 x 711 world units centred on a
+	# grid over forest cells, away from roads and the camp. Before this layer the
+	# tour's forest interior frame held no subject at all.
+	var frame_half: Vector2 = Vector2(632.0, 356.0)
+	var frames: int = 0
+	var subjects: int = 0
+	var sparse_frames: int = 0
+	var y: float = -13000.0
+	while y < 13000.0:
+		var x: float = -13000.0
+		while x < 13000.0:
+			var center: Vector2 = Vector2(x, y)
+			if (
+				world_map.get_biome_at_world(center) == BesprenWorldMap2D.Biome.FOREST
+				and world_map.get_minimum_road_edge_distance(center) > 700.0
+				and center.distance_to(camp) > WorldForestUnderstory2D.RIM_OUTER_RADIUS
+			):
+				var in_frame: int = 0
+				for element: Vector2 in positions:
+					if absf(element.x - center.x) < frame_half.x and absf(element.y - center.y) < frame_half.y:
+						in_frame += 1
+				frames += 1
+				subjects += in_frame
+				if in_frame < 3:
+					sparse_frames += 1
+			x += 1300.0
+		y += 730.0
+	var mean_subjects: float = float(subjects) / maxf(float(frames), 1.0)
+	_check(
+		frames >= 20 and mean_subjects >= 6.0,
+		"Forest gameplay frames average %.1f understory subjects over %d frames" % [mean_subjects, frames]
+	)
+	_check(
+		sparse_frames * 10 <= frames,
+		"At most a tenth of forest gameplay frames fall under three subjects (%d of %d)" % [sparse_frames, frames]
+	)
+	# Rebuilding on the same seed reproduces the layer exactly.
+	var first_hash: int = hash(positions)
+	understory.configure(
+		BesprenWorldMap2D.PLAYABLE_HALF_EXTENT,
+		BesprenWorldMap2D.WORLD_BUILD_SEED + 251,
+		camp,
+		Callable(world_map, &"is_position_walkable"),
+		Callable(world_map, &"get_minimum_road_edge_distance"),
+		Callable(world_map, &"get_biome_at_world")
+	)
+	_check(
+		hash(understory.get_element_positions()) == first_hash,
+		"Forest understory rebuilds identically on the same seed"
+	)
+
+
+func _validate_camp_clearing(world_map: BesprenWorldMap2D) -> void:
+	var clearing: WorldCampClearing2D = world_map.camp_clearing
+	_check(clearing != null, "World map owns the camp clearing layer")
+	if clearing == null:
+		return
+	_check_absolute_z(clearing, WorldCampClearing2D.CLEARING_Z, "Camp clearing")
+	_check(
+		clearing.z_index > EXPECTED_GROUND_Z and clearing.z_index < EXPECTED_DECOR_Z,
+		"Camp clearing sits above the terrain and below every dress layer"
+	)
+	_check(
+		clearing.position.is_equal_approx(BesprenWorldMap2D.STARTING_CAMP_POSITION),
+		"Camp clearing is centred on the starting camp"
+	)
+	_check(
+		clearing.get_path_target_count() == BesprenWorldMap2D.STARTING_CAMP_SATELLITE_COUNT,
+		"A worn path leads to each of the %d camp satellites" % BesprenWorldMap2D.STARTING_CAMP_SATELLITE_COUNT
+	)
+	var grain: ShaderMaterial = clearing.material as ShaderMaterial
+	_check(
+		grain != null
+		and grain.shader != null
+		and grain.shader.resource_path == WorldRoadSegmentChunk2D.DETAIL_SHADER_PATH
+		and not grain.shader.code.contains("render_mode unshaded"),
+		"Camp clearing wears the lit dirt grain the dirt roads use"
+	)
+	_check(not _subtree_has_physics(clearing), "Camp clearing owns no physics")
 
 
 func _subtree_has_physics(node: Node) -> bool:

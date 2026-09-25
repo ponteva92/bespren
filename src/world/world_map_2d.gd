@@ -83,6 +83,8 @@ const MIN_WILDERNESS_GROVE_TREE_COUNT: int = 35
 @onready var background_decor: WorldBackgroundDecor2D = %BackgroundDecor
 @onready var wilderness_accent: Node2D = %WildernessAccent
 @onready var ground_cover: Node2D = %GroundCover
+@onready var forest_understory: WorldForestUnderstory2D = %ForestUnderstory
+@onready var camp_clearing: WorldCampClearing2D = %CampClearing
 @onready var ambient_scenery: Node2D = %AmbientScenery
 @onready var structures: Node2D = %Structures
 @onready var world_bounds: Node2D = %WorldBounds
@@ -160,6 +162,26 @@ func ensure_built() -> void:
 		Callable(self, &"is_position_walkable"),
 		Callable(self, &"get_minimum_road_edge_distance")
 	)
+	## The understory and the clearing follow on streams of their own for the
+	## same reason: they make Metsa and the camp bowl read at the gameplay zoom
+	## without moving anything the gates already pin.
+	forest_understory.configure(
+		PLAYABLE_HALF_EXTENT,
+		WORLD_BUILD_SEED + 251,
+		STARTING_CAMP_POSITION,
+		Callable(self, &"is_position_walkable"),
+		Callable(self, &"get_minimum_road_edge_distance"),
+		Callable(self, &"get_biome_at_world")
+	)
+	camp_clearing.configure(STARTING_CAMP_POSITION, get_camp_satellite_positions())
+
+
+func get_camp_satellite_positions() -> PackedVector2Array:
+	var positions: PackedVector2Array = PackedVector2Array()
+	for obstacle: WorldObstacle2D in _obstacles:
+		if String(obstacle.name).begins_with("StartingCamp"):
+			positions.append(obstacle.position)
+	return positions
 
 
 func get_playable_rect() -> Rect2:
@@ -190,6 +212,13 @@ func get_biome_regions() -> Dictionary[StringName, Rect2]:
 	regions[&"kyla_east"] = _cells_to_rect(Vector2i(9, 9), Vector2i(12, 12))
 	regions[&"metsa_perimeter"] = PLAYABLE_RECT
 	return regions
+
+
+func get_biome_at_world(world_position: Vector2) -> int:
+	return get_biome_at_cell(Vector2i(
+		floori((world_position.x + PLAYABLE_HALF_EXTENT) / CELL_SIZE),
+		floori((world_position.y + PLAYABLE_HALF_EXTENT) / CELL_SIZE)
+	))
 
 
 func get_biome_at_cell(cell: Vector2i) -> int:

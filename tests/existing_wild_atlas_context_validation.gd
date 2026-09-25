@@ -345,6 +345,14 @@ func _load_existing_world_envelopes() -> bool:
 		return false
 	_ambient_positions = ambient_positions_variant
 	_ambient_radii = ambient_radii_variant
+	## The forest understory draws at the ambient layer's z and hides a ground
+	## card exactly as an ambient tree would, so its envelopes join that family.
+	var understory: WorldForestUnderstory2D = (
+		world_map.get_node_or_null(^"ForestUnderstory") as WorldForestUnderstory2D
+	)
+	if understory != null:
+		_ambient_positions.append_array(understory.get_element_positions())
+		_ambient_radii.append_array(understory.get_element_visual_radii())
 	_accent_positions = accent_positions_variant
 	_accent_radii = accent_radii_variant
 	_rubble_positions = background.get_rubble_positions()
