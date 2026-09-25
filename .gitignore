@@ -1,0 +1,7 @@
+.godot/
+artifacts/*.png
+artifacts/*.log
+artifacts/*.json
+artifacts/*.import
+artifacts/asset_audit/extraction_runs/*/stage/
+artifacts/asset_audit/extraction_runs/*/*.tmp
