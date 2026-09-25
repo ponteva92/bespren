@@ -276,6 +276,7 @@ func _validate_world_integration(world_map: BesprenWorldMap2D) -> void:
 	# is still held to the region, scale, shader and collision checks below.
 	var city_count: int = 0
 	var mall_count: int = 0
+	var every_mall_lot_is_dressed: bool = true
 	var village_west_count: int = 0
 	var village_east_count: int = 0
 	var fence_count: int = 0
@@ -377,6 +378,8 @@ func _validate_world_integration(world_map: BesprenWorldMap2D) -> void:
 				if not _validate_mall_visuals(obstacle, local_sprites):
 					every_category_visual_is_complete = false
 					every_local_region_is_correct = false
+				if not _validate_mall_foundation_dress(obstacle):
+					every_mall_lot_is_dressed = false
 			WorldObstacle2D.VisualKind.VILLAGE_HOUSE:
 				var west: bool = String(obstacle.name).begins_with("West")
 				var authored_house: bool = String(obstacle.name).contains("VillageHouse_")
@@ -514,6 +517,10 @@ func _validate_world_integration(world_map: BesprenWorldMap2D) -> void:
 		and WorldObstacle2D.MALL_FOUNDATION_SHADOW_OFFSET.length() < Vector2(42.0, 58.0).length(),
 		"Mall foundation shadow uses the compact low-alpha runtime treatment"
 	)
+	_check(
+		every_mall_lot_is_dressed,
+		"Every Ostari footprint draws its lot on a behind-parent child wearing the concrete grain material"
+	)
 	_check(every_target_collision_is_active, "Every targeted obstacle retains active world-static collision")
 	_check(forest_material != null and forest_material_is_shared, "All forest-finish local sprites share one ShaderMaterial")
 	_check(urban_material != null and urban_material_is_shared, "All urban-finish local sprites share one ShaderMaterial")
@@ -550,6 +557,24 @@ func _validate_mall_visuals(obstacle: WorldObstacle2D, sprites: Array[Sprite2D])
 		and local_module_regions.size() == 2
 		and salvage != null
 		and _get_region(salvage) == ROADSIDE_SALVAGE_REGION
+	)
+
+
+## The lot replaced a framed flat fill that read as a UI panel at the gameplay
+## zoom. What makes it a surface rather than a card is the material, so that is
+## what this proves: the concrete cell of the terrain atlas, through the lit
+## road grain shader, on a child drawn behind the module sprites.
+func _validate_mall_foundation_dress(obstacle: WorldObstacle2D) -> bool:
+	var dress: Node2D = obstacle.get_node_or_null("MallFoundationDress") as Node2D
+	if dress == null or not dress.show_behind_parent:
+		return false
+	var grain: ShaderMaterial = dress.material as ShaderMaterial
+	if grain == null or grain.shader == null:
+		return false
+	return (
+		grain.shader.resource_path == WorldRoadSegmentChunk2D.DETAIL_SHADER_PATH
+		and grain.get_shader_parameter(&"atlas_cell") == Vector2(1.0, 1.0)
+		and not grain.shader.code.contains("render_mode unshaded")
 	)
 
 

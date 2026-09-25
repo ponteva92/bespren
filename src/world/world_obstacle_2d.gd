@@ -100,8 +100,61 @@ const CAMP_MEDICAL_VISUAL_WIDTH_FACTOR: float = 1.52
 ## Kept as a local name because the mall foundation reads it too, but it is no
 ## longer a second definition of the same colour - [GroundShadow] owns it.
 const GROUND_SHADOW_COLOR: Color = GroundShadow.COLOR
+## The rubble chunks cast their drop shadow along this direction, at this alpha.
+## They are the only things on the Ostari lot that stand proud of it.
 const MALL_FOUNDATION_SHADOW_OFFSET: Vector2 = Vector2(18.0, 24.0)
 const MALL_FOUNDATION_SHADOW_ALPHA: float = 0.15
+## The Ostari footprint is the collision rectangle the modules stand on, and at
+## the 0.38 gameplay zoom about half of it shows below and between them. It used
+## to be drawn as a flat `263331` fill inside a 26-unit near-black frame with a
+## pale 11-unit inner stroke and a braced canopy band, which the gameplay tour
+## measured as the largest single subject on the mall frames and read as a UI
+## panel: a teal card with a border, holding building sprites like a display
+## case. It is now a demolition lot at ground level - dusty concrete that the
+## road grain shader textures, broken by joints, stains, fallen beams and rubble
+## mounds - fenced by a berm of broken chunks along the collision edge, because a
+## pile of debris is the ground-level language that says "you cannot walk here"
+## without a frame. Nothing here is lifted off the ground plane, so the lot has
+## no projection to disagree with the three-quarter module bakes standing on it.
+##
+## Value sits just above the urban ground's 58 to 61 so the lot reads as its own
+## surface, and the brightest chunk facet stays under luma 100, well clear of the
+## Metal node's `#E0E0E0` and the refuge.
+const MALL_APRON_COLOR: Color = Color(0.265, 0.252, 0.232, 1.0)
+const MALL_APRON_SPILL_COLOR: Color = Color(0.105, 0.100, 0.092, 0.30)
+const MALL_APRON_JOINT_COLOR: Color = Color(0.085, 0.085, 0.080, 0.34)
+const MALL_APRON_STAIN_COLOR: Color = Color(0.070, 0.068, 0.060, 0.22)
+const MALL_RUBBLE_SIDE_COLOR: Color = Color(0.150, 0.146, 0.136, 1.0)
+const MALL_RUBBLE_TOP_COLORS: Array[Color] = [
+	Color(0.350, 0.338, 0.312, 1.0),
+	Color(0.315, 0.318, 0.300, 1.0),
+	Color(0.382, 0.360, 0.325, 1.0),
+	Color(0.290, 0.270, 0.245, 1.0),
+	# One brick in five: the facade rubble, muted well under Rust bloom.
+	Color(0.340, 0.215, 0.165, 1.0),
+]
+const MALL_BEAM_COLOR: Color = Color(0.215, 0.118, 0.072, 1.0)
+const MALL_BEAM_EDGE_COLOR: Color = Color(0.420, 0.235, 0.130, 0.85)
+const MALL_WEED_COLOR: Color = Color(0.200, 0.262, 0.160, 0.78)
+## Screen-pixel intent, converted at the 0.38 gameplay zoom: a joint is two
+## pixels, an edge chunk seven to seventeen, a berm row about fifteen apart.
+const MALL_APRON_JOINT_SPACING: float = 230.0
+const MALL_APRON_JOINT_WIDTH: float = 5.0
+const MALL_BERM_CHUNK_SPACING: float = 40.0
+const MALL_BERM_ROWS: int = 3
+const MALL_BERM_ROW_DEPTH: float = 38.0
+const MALL_CHUNK_MIN_SIZE: float = 18.0
+const MALL_CHUNK_MAX_SIZE: float = 46.0
+## One mound, beam or stain per this many square world units of lot.
+const MALL_MOUND_AREA: float = 260000.0
+const MALL_BEAM_AREA: float = 900000.0
+const MALL_STAIN_AREA: float = 420000.0
+## Salts for `_unit_noise`, far from the 20-230 the building details use.
+const MALL_NOISE_BERM: int = 5000
+const MALL_NOISE_MOUND: int = 9000
+const MALL_NOISE_BEAM: int = 12000
+const MALL_NOISE_STAIN: int = 14000
+const MALL_NOISE_JOINT: int = 16000
 ## Three firs and two broadleaves from the baked wild family, as padded atlas
 ## regions taken from polyhaven_wild_manifest.json rather than retyped by hand.
 ## The retired sheet these replaced was side-view pixel art with a hard black
@@ -153,7 +206,11 @@ var stable_seed: int = 1
 var _imported_visual: Sprite2D
 var _imported_visuals: Array[Sprite2D] = []
 var _uses_imported_replacement: bool = false
+## The Ostari lot draws on its own child so it can wear the concrete grain
+## material while this node keeps the weathering one; see `MALL_APRON_COLOR`.
+var _foundation_dress: Node2D
 
+static var _mall_apron_material: ShaderMaterial
 static var _shared_forest_finish: ShaderMaterial
 static var _shared_urban_finish: ShaderMaterial
 static var _polyhaven_atlas: Texture2D
@@ -308,9 +365,8 @@ func _draw() -> void:
 			if not _uses_imported_replacement:
 				_draw_city_building()
 		VisualKind.MALL_SHELL:
-			if _uses_imported_replacement:
-				_draw_mall_foundation()
-			else:
+			# With the modules installed the lot is drawn by `_foundation_dress`.
+			if not _uses_imported_replacement:
 				_draw_mall_shell()
 		VisualKind.VILLAGE_HOUSE:
 			if not _uses_imported_replacement:
@@ -362,43 +418,264 @@ func _draw_city_building() -> void:
 	_draw_cracks(7, Color(0.02, 0.028, 0.027, 0.92))
 
 
+func _install_mall_foundation_dress() -> void:
+	_foundation_dress = Node2D.new()
+	_foundation_dress.name = &"MallFoundationDress"
+	# Behind this node, so the per-module contacts this node draws land on the
+	# lot rather than under it, and the module sprites stand on both.
+	_foundation_dress.show_behind_parent = true
+	_foundation_dress.material = _get_mall_apron_material()
+	add_child(_foundation_dress)
+	move_child(_foundation_dress, 0)
+	_foundation_dress.draw.connect(_draw_mall_foundation)
+	_foundation_dress.queue_redraw()
+
+
+## The road family's grain shader, pointed at the concrete cell the urban ground
+## is painted from, so the lot carries a photoscan's slab structure at one
+## material instead of a flat fill - and falls to the blue hour with the ground,
+## because that shader is `blend_mix` rather than `unshaded` (CLAUDE.md 8).
+static func _get_mall_apron_material() -> ShaderMaterial:
+	if _mall_apron_material != null:
+		return _mall_apron_material
+	var shader: Shader = load(WorldRoadSegmentChunk2D.DETAIL_SHADER_PATH) as Shader
+	var atlas: Texture2D = load(WorldRoadSegmentChunk2D.TERRAIN_ATLAS_PATH) as Texture2D
+	if shader == null or atlas == null:
+		return null
+	var built: ShaderMaterial = ShaderMaterial.new()
+	built.shader = shader
+	built.set_shader_parameter(&"detail_atlas", atlas)
+	built.set_shader_parameter(&"atlas_cell", Vector2(1.0, 1.0))
+	# Measured off the atlas cell's 496-pixel content: luma 51.6, sd 14.2.
+	built.set_shader_parameter(&"cell_mean", Vector3(0.2198, 0.1995, 0.1786))
+	built.set_shader_parameter(&"world_period", WorldRoadSegmentChunk2D.DETAIL_WORLD_PERIOD)
+	# Under the road's 1.25: the slab mosaic is twice the asphalt's deviation,
+	# and at full strength it out-shouted the berm that carries the edge.
+	built.set_shader_parameter(&"detail_strength", 0.85)
+	_mall_apron_material = built
+	return built
+
+
 func _draw_mall_foundation() -> void:
-	var shell_rect: Rect2 = Rect2(-half_size, half_size * 2.0)
-	draw_rect(
-		Rect2(shell_rect.position + MALL_FOUNDATION_SHADOW_OFFSET, shell_rect.size),
+	var canvas: Node2D = _foundation_dress
+	if canvas == null:
+		return
+	var lot: Rect2 = Rect2(-half_size, half_size * 2.0)
+	_draw_mall_spill(canvas, lot)
+	canvas.draw_rect(lot, MALL_APRON_COLOR)
+	_draw_mall_joints(canvas, lot)
+	var area: float = lot.size.x * lot.size.y
+	var interior: Rect2 = lot.grow(-minf(140.0, minf(half_size.x, half_size.y) * 0.3))
+	for stain_index: int in range(maxi(int(area / MALL_STAIN_AREA), 1)):
+		var salt: int = MALL_NOISE_STAIN + stain_index * 7
+		var center: Vector2 = _mall_point_in(interior, salt)
+		var radius: float = 70.0 + _unit_noise(salt + 3) * 150.0
+		canvas.draw_colored_polygon(
+			_mall_blob(center, radius, 0.62 + _unit_noise(salt + 4) * 0.3, salt),
+			MALL_APRON_STAIN_COLOR
+		)
+	for beam_index: int in range(int(area / MALL_BEAM_AREA)):
+		_draw_mall_beam(canvas, interior, MALL_NOISE_BEAM + beam_index * 11)
+	for mound_index: int in range(maxi(int(area / MALL_MOUND_AREA), 2)):
+		var salt: int = MALL_NOISE_MOUND + mound_index * 23
+		var center: Vector2 = _mall_point_in(interior, salt)
+		var spread: float = 50.0 + _unit_noise(salt + 2) * 80.0
+		var chunk_count: int = 5 + int(_unit_noise(salt + 3) * 5.0)
+		for chunk_index: int in range(chunk_count):
+			var chunk_salt: int = salt + 100 + chunk_index * 5
+			var offset: Vector2 = Vector2.from_angle(_unit_noise(chunk_salt) * TAU) * (
+				spread * sqrt(_unit_noise(chunk_salt + 1))
+			)
+			# Largest at the heart of the mound, so it reads as a heap and not a spray.
+			var falloff: float = 1.0 - offset.length() / maxf(spread, 1.0) * 0.45
+			_draw_mall_chunk(
+				canvas,
+				center + Vector2(offset.x, offset.y * 0.7),
+				lerpf(MALL_CHUNK_MIN_SIZE, MALL_CHUNK_MAX_SIZE, _unit_noise(chunk_salt + 2)) * falloff,
+				chunk_salt
+			)
+	_draw_mall_berm(canvas, lot)
+
+
+## A ragged darker band just outside the lot, so the concrete meets the street
+## through a spill of grit instead of along a ruled line.
+func _draw_mall_spill(canvas: Node2D, lot: Rect2) -> void:
+	var outline: PackedVector2Array = PackedVector2Array()
+	var corners: Array[Vector2] = [
+		lot.position,
+		Vector2(lot.end.x, lot.position.y),
+		lot.end,
+		Vector2(lot.position.x, lot.end.y),
+	]
+	var step: float = 120.0
+	for side: int in range(4):
+		var from: Vector2 = corners[side]
+		var to: Vector2 = corners[(side + 1) % 4]
+		# Corners run clockwise on a y-down canvas, so `orthogonal()` points out.
+		var outward: Vector2 = (to - from).normalized().orthogonal()
+		var samples: int = maxi(int((to - from).length() / step), 1)
+		for sample_index: int in range(samples):
+			var along: Vector2 = from.lerp(to, float(sample_index) / float(samples))
+			var reach: float = 14.0 + _unit_noise(MALL_NOISE_BERM + 3000 + side * 400 + sample_index) * 38.0
+			outline.append(along + outward * reach)
+	if outline.size() >= 3:
+		canvas.draw_colored_polygon(outline, MALL_APRON_SPILL_COLOR)
+
+
+## Expansion joints on a broken grid: about a third of the runs are missing and
+## the rest wander a little, because a cast slab that has been through a
+## collapse keeps its seams only in places.
+func _draw_mall_joints(canvas: Node2D, lot: Rect2) -> void:
+	var columns: int = maxi(int(lot.size.x / MALL_APRON_JOINT_SPACING), 1)
+	var rows: int = maxi(int(lot.size.y / MALL_APRON_JOINT_SPACING), 1)
+	var cell: Vector2 = Vector2(lot.size.x / float(columns), lot.size.y / float(rows))
+	for row: int in range(rows + 1):
+		for column: int in range(columns):
+			var salt: int = MALL_NOISE_JOINT + row * 97 + column * 13
+			if _unit_noise(salt) < 0.34:
+				continue
+			var y: float = lot.position.y + cell.y * float(row)
+			if row == 0 or row == rows:
+				continue
+			var x0: float = lot.position.x + cell.x * float(column)
+			canvas.draw_line(
+				Vector2(x0, y + (_unit_noise(salt + 1) - 0.5) * 10.0),
+				Vector2(x0 + cell.x, y + (_unit_noise(salt + 2) - 0.5) * 10.0),
+				MALL_APRON_JOINT_COLOR,
+				MALL_APRON_JOINT_WIDTH
+			)
+	for column: int in range(1, columns):
+		for row: int in range(rows):
+			var salt: int = MALL_NOISE_JOINT + 5000 + column * 97 + row * 13
+			if _unit_noise(salt) < 0.34:
+				continue
+			var x: float = lot.position.x + cell.x * float(column)
+			var y0: float = lot.position.y + cell.y * float(row)
+			canvas.draw_line(
+				Vector2(x + (_unit_noise(salt + 1) - 0.5) * 10.0, y0),
+				Vector2(x + (_unit_noise(salt + 2) - 0.5) * 10.0, y0 + cell.y),
+				MALL_APRON_JOINT_COLOR,
+				MALL_APRON_JOINT_WIDTH
+			)
+			# Growth where the seams cross: the only green on the lot, and small.
+			if _unit_noise(salt + 3) < 0.22:
+				_draw_mall_weed(canvas, Vector2(x, y0), salt + 4)
+
+
+func _draw_mall_weed(canvas: Node2D, root: Vector2, salt: int) -> void:
+	for blade: int in range(3):
+		var angle: float = -PI * 0.5 + (float(blade) - 1.0) * 0.55 + (_unit_noise(salt + blade) - 0.5) * 0.4
+		var reach: float = 16.0 + _unit_noise(salt + blade + 5) * 14.0
+		canvas.draw_line(root, root + Vector2.from_angle(angle) * reach, MALL_WEED_COLOR, 4.0)
+
+
+## Chunks laid along every edge of the lot in a few rows, the outer row straddling
+## the collision line so the silhouette breaks and the edge is a heap, not a rule.
+func _draw_mall_berm(canvas: Node2D, lot: Rect2) -> void:
+	var corners: Array[Vector2] = [
+		lot.position,
+		Vector2(lot.end.x, lot.position.y),
+		lot.end,
+		Vector2(lot.position.x, lot.end.y),
+	]
+	for row: int in range(MALL_BERM_ROWS - 1, -1, -1):
+		for side: int in range(4):
+			var from: Vector2 = corners[side]
+			var to: Vector2 = corners[(side + 1) % 4]
+			var direction: Vector2 = (to - from).normalized()
+			var inward: Vector2 = -direction.orthogonal()
+			var length: float = (to - from).length()
+			var count: int = maxi(int(length / MALL_BERM_CHUNK_SPACING), 1)
+			for chunk_index: int in range(count):
+				var salt: int = MALL_NOISE_BERM + row * 20000 + side * 4000 + chunk_index * 3
+				# Inner rows thin out, so the berm fades into the lot.
+				if row > 0 and _unit_noise(salt + 2) < 0.28 * float(row):
+					continue
+				var along: float = (float(chunk_index) + _unit_noise(salt)) * length / float(count)
+				var depth: float = (float(row) - 0.3 + _unit_noise(salt + 1) * 0.8) * MALL_BERM_ROW_DEPTH
+				var size_scale: float = 1.0 - float(row) * 0.18
+				_draw_mall_chunk(
+					canvas,
+					from + direction * along + inward * depth,
+					lerpf(MALL_CHUNK_MIN_SIZE, MALL_CHUNK_MAX_SIZE, _unit_noise(salt + 3)) * size_scale,
+					salt
+				)
+
+
+## One broken piece of slab: a dark drop shadow, a darker broken side, and a lit
+## top facet. Six to seventeen screen pixels at the gameplay zoom, which is the
+## band where a heap reads as a heap rather than as noise or as a prop.
+func _draw_mall_chunk(canvas: Node2D, center: Vector2, size: float, salt: int) -> void:
+	var top: PackedVector2Array = _mall_blob(center, size, 0.72, salt)
+	var shadow_offset: Vector2 = MALL_FOUNDATION_SHADOW_OFFSET.normalized() * size * 0.55
+	var side_offset: Vector2 = Vector2(0.0, size * 0.34)
+	var shadow: PackedVector2Array = PackedVector2Array()
+	var side: PackedVector2Array = PackedVector2Array()
+	for point: Vector2 in top:
+		shadow.append(point + shadow_offset)
+		side.append(point + side_offset)
+	canvas.draw_colored_polygon(
+		shadow,
 		Color(
 			GROUND_SHADOW_COLOR.r,
 			GROUND_SHADOW_COLOR.g,
 			GROUND_SHADOW_COLOR.b,
-			MALL_FOUNDATION_SHADOW_ALPHA
+			MALL_FOUNDATION_SHADOW_ALPHA * 2.6
 		)
 	)
-	draw_rect(shell_rect, Color("263331"))
-	draw_rect(shell_rect, Color("101817"), false, 26.0)
-	var inset: Rect2 = shell_rect.grow(-68.0)
-	if inset.size.x > 0.0 and inset.size.y > 0.0:
-		draw_rect(inset, Color("354440"))
-		draw_rect(inset, Color(0.36, 0.50, 0.46, 0.48), false, 11.0)
-	var canopy_height: float = minf(150.0, half_size.y * 0.28)
-	var canopy: Rect2 = Rect2(
-		Vector2(-half_size.x + 54.0, half_size.y * 0.38 - canopy_height * 0.5),
-		Vector2(half_size.x * 2.0 - 108.0, canopy_height)
+	canvas.draw_colored_polygon(side, MALL_RUBBLE_SIDE_COLOR)
+	canvas.draw_colored_polygon(
+		top,
+		MALL_RUBBLE_TOP_COLORS[int(_unit_noise(salt + 7) * 97.0) % MALL_RUBBLE_TOP_COLORS.size()]
 	)
-	if canopy.size.x > 0.0 and canopy.size.y > 0.0:
-		draw_rect(canopy, Color("59615a"))
-		draw_rect(canopy, Color("171e1c"), false, 10.0)
-		for brace_index: int in range(7):
-			var brace_x: float = lerpf(
-				canopy.position.x + 34.0,
-				canopy.end.x - 34.0,
-				float(brace_index) / 6.0
-			)
-			draw_line(
-				Vector2(brace_x, canopy.position.y),
-				Vector2(brace_x, canopy.end.y),
-				Color(0.15, 0.21, 0.19, 0.70),
-				7.0
-			)
+
+
+func _draw_mall_beam(canvas: Node2D, interior: Rect2, salt: int) -> void:
+	var center: Vector2 = _mall_point_in(interior, salt)
+	var direction: Vector2 = Vector2.from_angle(_unit_noise(salt + 2) * PI)
+	var half_length: float = 90.0 + _unit_noise(salt + 3) * 100.0
+	var half_width: float = 8.0 + _unit_noise(salt + 4) * 3.0
+	var across: Vector2 = direction.orthogonal() * half_width
+	var along: Vector2 = direction * half_length
+	var body: PackedVector2Array = PackedVector2Array([
+		center - along - across,
+		center + along - across,
+		center + along + across,
+		center - along + across,
+	])
+	var shadow: PackedVector2Array = PackedVector2Array()
+	for point: Vector2 in body:
+		shadow.append(point + MALL_FOUNDATION_SHADOW_OFFSET * 0.6)
+	canvas.draw_colored_polygon(
+		shadow,
+		Color(
+			GROUND_SHADOW_COLOR.r,
+			GROUND_SHADOW_COLOR.g,
+			GROUND_SHADOW_COLOR.b,
+			MALL_FOUNDATION_SHADOW_ALPHA * 2.6
+		)
+	)
+	canvas.draw_colored_polygon(body, MALL_BEAM_COLOR)
+	canvas.draw_line(center - along - across * 0.6, center + along - across * 0.6, MALL_BEAM_EDGE_COLOR, 4.0)
+
+
+func _mall_point_in(area: Rect2, salt: int) -> Vector2:
+	return Vector2(
+		lerpf(area.position.x, area.end.x, _unit_noise(salt)),
+		lerpf(area.position.y, area.end.y, _unit_noise(salt + 1))
+	)
+
+
+## An irregular closed outline around `center`: seven vertices at their own reach,
+## squashed on y so a flat piece reads as lying on the ground.
+func _mall_blob(center: Vector2, radius: float, squash: float, salt: int) -> PackedVector2Array:
+	var points: PackedVector2Array = PackedVector2Array()
+	var spin: float = _unit_noise(salt + 11) * TAU
+	for vertex: int in range(7):
+		var angle: float = spin + TAU * float(vertex) / 7.0
+		var reach: float = radius * (0.62 + _unit_noise(salt + 13 + vertex) * 0.38)
+		points.append(center + Vector2(cos(angle) * reach, sin(angle) * reach * squash))
+	return points
 
 
 func _draw_city_roof_variant(roof_rect: Rect2, variant: int) -> void:
@@ -844,6 +1121,8 @@ func _install_local_mall_visuals() -> void:
 			true
 		)
 	_uses_imported_replacement = not _imported_visuals.is_empty()
+	if _uses_imported_replacement:
+		_install_mall_foundation_dress()
 
 
 func _install_local_village_visual() -> void:
