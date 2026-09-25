@@ -61,11 +61,12 @@ func _validate_hud_deck_and_projection() -> void:
 			horizontal_order = false
 	_check(horizontal_order, "Command buttons form one compact horizontal action row")
 	_check(
-		hud.get_night_indicator().text == "NIGHT 01 // DAYLIGHT"
+		hud.get_night_indicator().text == "DAY 01"
 		and hud.get_modifier_label().text == "ZOMBIES -65%"
 		and hud.get_clock_label().text == "07:30 TO NIGHT",
-		"HUD exposes night, daytime modifier, and 450-second clock state"
+		"HUD exposes day number, daytime modifier, and 450-second clock state"
 	)
+	await _validate_chip_text_fits(hud)
 	hud.set_status("HUD state remains available to systems")
 	hud.show_resource_pickup(Vector2.ZERO, 0, 3)
 	hud.show_resource_pickup(Vector2.ZERO, 1, 2)
@@ -503,6 +504,65 @@ func _validate_integrated_authority_and_feedback() -> void:
 	await process_frame
 	await process_frame
 	await create_timer(0.1).timeout
+
+
+## The chip labels trim with an ellipsis, so an overflowing string passes every
+## geometry check while the player reads "NIGHT 02 // DAYLI...". Measure each
+## string against the width its label actually receives, in every state the
+## chip can show, and leave the HUD back in its day-one state afterwards.
+func _validate_chip_text_fits(hud: GameHUD) -> void:
+	var overflow: PackedStringArray = PackedStringArray()
+	hud.set_day_night_state(367, 2, false)
+	await process_frame
+	overflow.append_array(_overflowing_labels(hud, "day"))
+	hud.set_day_night_state(0, 12, true)
+	await process_frame
+	overflow.append_array(_overflowing_labels(hud, "night"))
+	hud.set_wave_pacing(196, false)
+	await process_frame
+	overflow.append_array(_overflowing_labels(hud, "wave pacing"))
+	hud.set_wave_pacing(0, true)
+	await process_frame
+	overflow.append_array(_overflowing_labels(hud, "frozen"))
+	hud.show_warning(60)
+	await process_frame
+	overflow.append_array(_overflowing_labels(hud, "warning"))
+	for variant_id: int in range(EnemyPresentationCatalog.VARIANT_COUNT):
+		hud.set_boss_gate(true, EnemyPresentationCatalog.get_variant_name(variant_id), 3)
+		await process_frame
+		overflow.append_array(_overflowing_labels(hud, "boss %d" % variant_id))
+	hud.set_boss_gate(false, &"", 0)
+	hud.set_day_night_state(450, 1, false)
+	await process_frame
+	_check(
+		overflow.is_empty(),
+		"Every wave and event chip string fits its label unclipped%s"
+		% ("" if overflow.is_empty() else ": " + ", ".join(overflow))
+	)
+
+
+func _overflowing_labels(hud: GameHUD, state: String) -> PackedStringArray:
+	var overflow: PackedStringArray = PackedStringArray()
+	var labels: Array[Label] = [
+		hud.get_night_indicator(),
+		hud.get_modifier_label(),
+		hud.get_clock_label(),
+		hud.get_threat_tag(),
+		hud.get_threat_label(),
+	]
+	for label: Label in labels:
+		if not label.is_visible_in_tree() or label.text.is_empty():
+			continue
+		var font: Font = label.get_theme_font(&"font")
+		var font_size: int = label.get_theme_font_size(&"font_size")
+		var text_width: float = font.get_string_size(
+			label.text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size
+		).x
+		if text_width > label.size.x:
+			overflow.append(
+				"%s '%s' needs %.1f of %.1f px" % [state, label.text, text_width, label.size.x]
+			)
+	return overflow
 
 
 func _find_clear_grid_position(

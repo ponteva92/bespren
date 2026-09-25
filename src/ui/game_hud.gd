@@ -183,9 +183,12 @@ func set_day_night_state(seconds_remaining: int, night_number: int, is_night: bo
 	var safe_seconds: int = maxi(seconds_remaining, 0)
 	var minutes: int = safe_seconds / 60
 	var seconds: int = safe_seconds % 60
-	night_indicator.text = "NIGHT %02d // %s" % [
+	# Day N precedes night N, so the one number names whichever phase is live.
+	# The former "NIGHT 02 // DAYLIGHT" contradicted itself and needed 75 of the
+	# label's 70 px, so every daytime frame shipped it as "NIGHT 02 // DAYLI...".
+	night_indicator.text = "%s %02d" % [
+		"NIGHT" if is_night else "DAY",
 		maxi(night_number, 1),
-		"ACTIVE" if is_night else "DAYLIGHT",
 	]
 	modifier_label.text = "ZOMBIES +35%" if is_night else "ZOMBIES -65%"
 	modifier_label.add_theme_color_override(
