@@ -55,6 +55,7 @@ ENET_PROBES=(
 RENDER_GATES=(
 	render_validation
 	world_render_validation
+	gameplay_tour_render_validation
 	tactical_hud_render_validation
 	start_menu_render_validation
 	player_presentation_render_validation
