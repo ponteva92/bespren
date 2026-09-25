@@ -84,16 +84,6 @@ func get_district_rect_cells(district: StringName) -> Rect2i:
 	return district_cell_rects[index] if index >= 0 and index < district_cell_rects.size() else Rect2i()
 
 
-## Routes as the road network expects them: all but the grade. Dirt and
-## perimeter both draw as dirt until the road hierarchy gives the perimeter its
-## own look (roadmap Phase 3).
-func get_dirt_flags() -> PackedByteArray:
-	var flags: PackedByteArray = PackedByteArray()
-	for grade: int in road_grades:
-		flags.append(0 if grade == RoadGrade.ASPHALT_SPINE else 1)
-	return flags
-
-
 ## Every route except the camp spur, for the rules that keep the refuge
 ## secluded from roads.
 func get_routes_without_spur() -> Array[PackedVector2Array]:

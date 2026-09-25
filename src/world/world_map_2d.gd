@@ -530,7 +530,7 @@ func _build_nature_tile_map() -> void:
 
 
 func _build_road_network() -> void:
-	road_network.configure(COMPOSITION.road_routes, COMPOSITION.get_dirt_flags())
+	road_network.configure(COMPOSITION.road_routes, COMPOSITION.road_grades)
 	terrain_details.z_index = -20
 	terrain_details.z_as_relative = false
 

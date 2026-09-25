@@ -146,6 +146,7 @@ func _run() -> void:
 	_validate_camp_clearing(world_map)
 	_validate_east_rest(world_map)
 	_validate_composition(world_map)
+	_validate_road_hierarchy(world_map)
 
 	world_map.queue_free()
 	await process_frame
@@ -1658,6 +1659,79 @@ func _validate_composition(world_map: BesprenWorldMap2D) -> void:
 	_check(
 		regions.has(&"kaupunki") and regions.has(&"ostari") and regions.has(&"kyla_west") and regions.has(&"kyla_east"),
 		"District regions are derived from the composition's district paint"
+	)
+
+
+## Roadmap Phase 3: three grades that read apart at 1x through width, edge and
+## negative space; junctions drawn as one surface; free ends that wear out
+## instead of stopping square. Collision and flow stay canonical, which the
+## pinned flow hash above already proves for this change.
+func _validate_road_hierarchy(world_map: BesprenWorldMap2D) -> void:
+	var network: WorldRoadNetwork2D = world_map.road_network
+	var composition: WorldCompositionContract = BesprenWorldMap2D.COMPOSITION
+	var grades_present: Dictionary[int, bool] = {}
+	for route_index: int in range(network.get_route_count()):
+		grades_present[network.get_route_grade(route_index)] = true
+	_check(grades_present.size() == 3, "The road network draws all three grades: spine, dirt and perimeter")
+	var spine: Vector2 = WorldRoadNetwork2D.get_grade_widths(WorldCompositionContract.RoadGrade.ASPHALT_SPINE)
+	var dirt: Vector2 = WorldRoadNetwork2D.get_grade_widths(WorldCompositionContract.RoadGrade.DIRT)
+	var track: Vector2 = WorldRoadNetwork2D.get_grade_widths(WorldCompositionContract.RoadGrade.PERIMETER)
+	_check(
+		spine.y > dirt.y and dirt.y > track.y and spine.x > dirt.x and dirt.x > track.x,
+		"Drawn widths step down spine > dirt > perimeter (%.0f / %.0f / %.0f bed)" % [spine.y, dirt.y, track.y]
+	)
+	_check(
+		is_equal_approx(
+			WorldRoadNetwork2D.get_clearance_half_width(WorldCompositionContract.RoadGrade.PERIMETER),
+			WorldRoadNetwork2D.DIRT_OUTER_WIDTH * 0.5
+		),
+		"The perimeter keeps the dirt corridor for every clearance rule, so nothing seeded moves"
+	)
+	var perimeter_index: int = composition.road_names.find("wilderness_perimeter")
+	_check(
+		perimeter_index >= 0 and network.get_route_grade(perimeter_index) == WorldCompositionContract.RoadGrade.PERIMETER,
+		"The wilderness perimeter loop is the perimeter grade"
+	)
+	var chunks: Array[WorldRoadSegmentChunk2D] = network.get_render_chunks()
+	var last_shoulder: int = -1
+	var first_bed: int = chunks.size()
+	var shoulders: int = 0
+	var beds: int = 0
+	for chunk: WorldRoadSegmentChunk2D in chunks:
+		if chunk.get_pass() == WorldRoadSegmentChunk2D.Pass.SHOULDER:
+			shoulders += 1
+			last_shoulder = maxi(last_shoulder, chunk.get_index())
+		elif chunk.get_pass() == WorldRoadSegmentChunk2D.Pass.BED:
+			beds += 1
+			first_bed = mini(first_bed, chunk.get_index())
+	_check(
+		shoulders > 0 and shoulders == beds and last_shoulder < first_bed,
+		"Every shoulder is drawn before any bed, so junctions read as one surface (%d + %d items)" % [shoulders, beds]
+	)
+	var spur: int = composition.camp_spur_route
+	_check(
+		spur >= 0 and network.is_route_end_free(spur, false) and not network.is_route_end_free(spur, true),
+		"The spur's camp end is free and its spine end is a junction"
+	)
+	_check(
+		not network.is_route_end_free(perimeter_index, false) and not network.is_route_end_free(perimeter_index, true),
+		"The closed perimeter loop has no free ends"
+	)
+	var capped_chunks: int = 0
+	var spur_is_capped: bool = false
+	for chunk: WorldRoadSegmentChunk2D in chunks:
+		if chunk.has_cap():
+			capped_chunks += 1
+			var bounds: Rect2 = chunk.get_world_render_bounds()
+			if bounds.grow(1.0).has_point(composition.road_routes[spur][0]):
+				spur_is_capped = true
+	_check(spur_is_capped, "The spur wears out into the camp clearing instead of stopping square")
+	var free_ends: int = 0
+	for route_index: int in range(network.get_route_count()):
+		free_ends += int(network.is_route_end_free(route_index, false)) + int(network.is_route_end_free(route_index, true))
+	_check(
+		capped_chunks == free_ends * 2,
+		"Every free route end is capped in both passes and no junction end is (%d ends)" % free_ends
 	)
 
 

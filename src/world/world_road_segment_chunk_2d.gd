@@ -173,6 +173,38 @@ const DETAIL_WORLD_PERIOD: float = 1024.0
 ## ground it sits in.
 const DETAIL_STRENGTH: float = 1.25
 
+## Which half of a segment this item draws. The network builds every road's
+## shoulder before any bed so junctions read as one surface; `BOTH` is the
+## single-item form for a caller that draws one segment on its own.
+enum Pass {
+	BOTH,
+	SHOULDER,
+	BED,
+}
+
+## The perimeter track: a grassier bed, a soft verge instead of a dark gutter, a
+## grass crown between two ruts. Values sit between the dirt branch's bed at luma
+## 65.9 and the forest floor's 50, so the track is still a track but no longer a
+## road - the contract's third grade (D-20).
+const PERIMETER_BED_COLOR: Color = Color(0.270, 0.235, 0.170, 1.0)
+const PERIMETER_VERGE_COLOR: Color = Color(0.205, 0.192, 0.140, 0.58)
+const PERIMETER_CROWN_COLOR: Color = Color(0.205, 0.262, 0.150, 0.62)
+const PERIMETER_RUT_OFFSET: float = 58.0
+const PERIMETER_RUT_WIDTH: float = 22.0
+const PERIMETER_CROWN_WIDTH: float = 44.0
+## A free end is capped by a half-ellipse this long along the road, as a share of
+## the band's half width, with a ragged rim: a track that runs into a clearing
+## should fade into it, not stop at a ruled line.
+const CAP_LENGTH_SHARE: float = 0.78
+const CAP_SAMPLES: int = 9
+const CAP_RAGGEDNESS: float = 0.14
+## Over this run before a free end the shoulder narrows onto the bed, so the
+## track ends as worn ground rather than as a dark ring around a round pad - the
+## first cap drew exactly that where the spur enters the camp clearing.
+const CAP_TAPER_LENGTH: float = 300.0
+## Alpha at the very tip of a bed cap; the sides stay opaque.
+const CAP_TIP_ALPHA: float = 0.12
+
 static var _asphalt_detail_material: ShaderMaterial = null
 static var _dirt_detail_material: ShaderMaterial = null
 
@@ -185,6 +217,14 @@ var _dash_length: float = 0.0
 var _dash_gap: float = 0.0
 var _authored_segment_distance: float = 0.0
 var _world_render_bounds: Rect2 = Rect2()
+var _pass: int = Pass.BOTH
+var _grade: int = WorldCompositionContract.RoadGrade.ASPHALT_SPINE
+var _cap_start: bool = false
+var _cap_finish: bool = false
+## Where other routes cross or join this piece, as (along-distance, radius):
+## painted lines and dashes stop inside them, so a junction's surface is one
+## carriageway instead of two sets of markings laid across each other.
+var _junction_spans: PackedVector2Array = PackedVector2Array()
 
 
 func configure(
@@ -240,6 +280,51 @@ func configure(
 	queue_redraw()
 
 
+## Called by the network after [method configure]: which pass this item draws,
+## the route's grade, and whether either end of this piece is a free route end.
+func configure_pass(
+	pass_kind: int,
+	grade: int,
+	cap_start: bool,
+	cap_finish: bool,
+	world_junctions: PackedVector3Array = PackedVector3Array()
+) -> void:
+	_pass = pass_kind
+	_grade = grade
+	_cap_start = cap_start
+	_cap_finish = cap_finish
+	_junction_spans.clear()
+	var axis: Vector2 = _finish - _start
+	if not axis.is_zero_approx():
+		var axis_direction: Vector2 = axis.normalized()
+		for junction: Vector3 in world_junctions:
+			var local: Vector2 = Vector2(junction.x, junction.y) - position - _start
+			_junction_spans.append(Vector2(local.dot(axis_direction), junction.z))
+	var displacement: Vector2 = _finish - _start
+	if not displacement.is_zero_approx():
+		var direction: Vector2 = displacement.normalized()
+		var reach: float = _outer_width * 0.5 * (1.0 + CAP_RAGGEDNESS) + OUTER_EDGE_WANDER
+		if _cap_start:
+			var tip: Vector2 = position + _start - direction * reach * CAP_LENGTH_SHARE
+			_world_render_bounds = _world_render_bounds.expand(tip + direction.orthogonal() * reach).expand(tip - direction.orthogonal() * reach)
+		if _cap_finish:
+			var tip: Vector2 = position + _finish + direction * reach * CAP_LENGTH_SHARE
+			_world_render_bounds = _world_render_bounds.expand(tip + direction.orthogonal() * reach).expand(tip - direction.orthogonal() * reach)
+	queue_redraw()
+
+
+func get_pass() -> int:
+	return _pass
+
+
+func get_grade() -> int:
+	return _grade
+
+
+func has_cap() -> bool:
+	return _cap_start or _cap_finish
+
+
 func get_world_render_bounds() -> Rect2:
 	return _world_render_bounds
 
@@ -252,17 +337,32 @@ func _draw() -> void:
 	## `363d3b` measures luma 59.4 and the city biome blend predicts 61.8 - so the
 	## carriageway has always been read from its dark shoulder and its dashes
 	## rather than from its fill, and it still is.
+	var perimeter: bool = _grade == WorldCompositionContract.RoadGrade.PERIMETER
+	if _pass != Pass.BED:
+		var shoulder: Color = ASPHALT_OUTER_COLOR
+		if perimeter:
+			shoulder = PERIMETER_VERGE_COLOR
+		elif _is_dirt:
+			shoulder = DIRT_OUTER_COLOR
+		_draw_wandering_band(_outer_width * 0.5, shoulder, true)
+		if _pass == Pass.SHOULDER:
+			return
+	if perimeter:
+		_draw_wandering_band(_inner_width * 0.5, PERIMETER_BED_COLOR, false)
+		_draw_band_caps(_inner_width * 0.5, PERIMETER_BED_COLOR, false)
+		_draw_perimeter_track()
+		return
 	if _is_dirt:
-		_draw_wandering_band(_outer_width * 0.5, DIRT_OUTER_COLOR, true)
 		_draw_wandering_band(_inner_width * 0.5, DIRT_INNER_COLOR, false)
+		_draw_band_caps(_inner_width * 0.5, DIRT_INNER_COLOR, false)
 		_draw_wear_patches(true)
 		_draw_surface_aggregate(true)
 		_draw_dirt_ruts()
 		_draw_shoulder_grit(true)
 		_draw_surface_breaks(true)
 		return
-	_draw_wandering_band(_outer_width * 0.5, ASPHALT_OUTER_COLOR, true)
 	_draw_wandering_band(_inner_width * 0.5, ASPHALT_INNER_COLOR, false)
+	_draw_band_caps(_inner_width * 0.5, ASPHALT_INNER_COLOR, false)
 	_draw_wheel_paths()
 	_draw_wear_patches(false)
 	_draw_surface_aggregate(false)
@@ -294,7 +394,8 @@ func _draw_asphalt_edges() -> void:
 			307 + side * 11,
 			INNER_EDGE_PERIOD,
 			-0.55,
-			1.60
+			1.60,
+			true
 		)
 
 
@@ -328,6 +429,8 @@ func _draw_asphalt_dashes() -> void:
 			chunk_finish_distance
 		) - chunk_start_distance
 		if skip_seed < DASH_SKIP_SHARE:
+			clipped_finish = clipped_start
+		if _junction_weight((clipped_start + clipped_finish) * 0.5) < 0.5:
 			clipped_finish = clipped_start
 		if clipped_finish > clipped_start:
 			var lateral: Vector2 = (
@@ -373,7 +476,8 @@ func _draw_wandering_stripe(
 	key: int,
 	wander_period: float = RUT_WANDER_PERIOD,
 	alpha_low: float = 0.16,
-	alpha_high: float = 1.34
+	alpha_high: float = 1.34,
+	respect_junctions: bool = false
 ) -> void:
 	## One track: a chain of short segments whose lateral offset follows a smooth
 	## noise and whose alpha follows another. The noise is keyed off the authored
@@ -404,9 +508,12 @@ func _draw_wandering_stripe(
 			)
 			points.push_back(previous)
 			points.push_back(point)
+			var junction_weight: float = (
+				_junction_weight(along - RUT_SAMPLE_SPACING * 0.5) if respect_junctions else 1.0
+			)
 			colors.push_back(Color(
 				tint.r, tint.g, tint.b,
-				tint.a * clampf(lerpf(alpha_low, alpha_high, depth), 0.0, 1.0)
+				tint.a * clampf(lerpf(alpha_low, alpha_high, depth), 0.0, 1.0) * junction_weight
 			))
 		previous = point
 	if not points.is_empty():
@@ -437,15 +544,89 @@ func _draw_wandering_band(half_width: float, tint: Color, is_outer: bool) -> voi
 		var along: float = length * float(step) / float(steps)
 		var distance: float = _authored_segment_distance + along
 		var spine: Vector2 = _start + direction * along
+		var band_half: float = half_width
+		if is_outer:
+			band_half = lerpf(_inner_width * 0.5, half_width, _free_end_weight(along, length))
 		outline.push_back(
-			spine + perpendicular * _edge_offset(half_width, 1, distance, is_outer)
+			spine + perpendicular * _edge_offset(band_half, 1, distance, is_outer)
 		)
 		back.push_back(
-			spine - perpendicular * _edge_offset(half_width, -1, distance, is_outer)
+			spine - perpendicular * _edge_offset(band_half, -1, distance, is_outer)
 		)
 	back.reverse()
 	outline.append_array(back)
 	draw_colored_polygon(outline, tint)
+
+
+## 0 inside a junction, easing back to 1 over a short run outside it.
+func _junction_weight(along: float) -> float:
+	var weight: float = 1.0
+	for span: Vector2 in _junction_spans:
+		weight = minf(weight, smoothstep(span.y, span.y + 60.0, absf(along - span.x)))
+	return weight
+
+
+## 1 away from free ends, easing to 0 at a capped end over `CAP_TAPER_LENGTH`.
+func _free_end_weight(along: float, length: float) -> float:
+	var weight: float = 1.0
+	if _cap_start:
+		weight = minf(weight, smoothstep(0.0, CAP_TAPER_LENGTH, along))
+	if _cap_finish:
+		weight = minf(weight, smoothstep(0.0, CAP_TAPER_LENGTH, length - along))
+	return weight
+
+
+## Ragged half-ellipse caps on free route ends, joined exactly to the band's own
+## wandering edges so the cap and the band share their corners, and fading
+## toward the tip so the track wears out into the ground it runs onto.
+func _draw_band_caps(half_width: float, tint: Color, is_outer: bool) -> void:
+	var displacement: Vector2 = _finish - _start
+	var length: float = displacement.length()
+	if length <= 0.0 or not (_cap_start or _cap_finish):
+		return
+	var direction: Vector2 = displacement / length
+	var perpendicular: Vector2 = direction.orthogonal()
+	for at_finish: bool in [false, true]:
+		if (at_finish and not _cap_finish) or (not at_finish and not _cap_start):
+			continue
+		var along: float = length if at_finish else 0.0
+		var distance: float = _authored_segment_distance + along
+		var spine: Vector2 = _start + direction * along
+		var outward: Vector2 = direction if at_finish else -direction
+		var plus_reach: float = _edge_offset(half_width, 1, distance, is_outer)
+		var minus_reach: float = _edge_offset(half_width, -1, distance, is_outer)
+		var cap: PackedVector2Array = PackedVector2Array([spine])
+		var colors: PackedColorArray = PackedColorArray([tint])
+		for sample: int in range(CAP_SAMPLES + 1):
+			var t: float = float(sample) / float(CAP_SAMPLES)
+			var angle: float = lerpf(-PI * 0.5, PI * 0.5, t)
+			var reach: float = lerpf(minus_reach, plus_reach, t)
+			if sample > 0 and sample < CAP_SAMPLES:
+				reach *= 1.0 + (_stable_scalar(sample, 509 + (1 if is_outer else 0) + (7 if at_finish else 0)) - 0.5) * 2.0 * CAP_RAGGEDNESS
+			cap.push_back(
+				spine
+				+ outward * cos(angle) * reach * CAP_LENGTH_SHARE
+				+ perpendicular * sin(angle) * reach
+			)
+			colors.push_back(Color(tint.r, tint.g, tint.b, tint.a * lerpf(1.0, CAP_TIP_ALPHA, cos(angle))))
+		draw_polygon(cap, colors)
+
+
+## The far belt's track: a grass crown down the middle, two shallow ruts, and
+## the verge grit that breaks its edge. No dashes, patches or frost breaks - a
+## track nobody paved never had them.
+func _draw_perimeter_track() -> void:
+	_draw_wandering_stripe(
+		0.0, PERIMETER_CROWN_WIDTH, PERIMETER_CROWN_COLOR,
+		RUT_WANDER_AMPLITUDE * 0.7, RUT_DEPTH_PERIOD * 1.3, 71
+	)
+	for side: int in [-1, 1]:
+		_draw_wandering_stripe(
+			float(side) * PERIMETER_RUT_OFFSET, PERIMETER_RUT_WIDTH, RUT_COLOR,
+			RUT_WANDER_AMPLITUDE * 0.8, RUT_DEPTH_PERIOD, 83 + side * 5
+		)
+	_draw_surface_aggregate(true)
+	_draw_shoulder_grit(true)
 
 
 func _smooth_noise(distance: float, period: float, key: int) -> float:
