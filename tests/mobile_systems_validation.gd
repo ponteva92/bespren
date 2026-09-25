@@ -369,7 +369,7 @@ func _validate_game_world() -> void:
 		"Mobile composition relocates the Base to exact position (9950, 2400)"
 	)
 	_check(
-		world_map.get_minimum_road_edge_distance(base_core.global_position)
+		world_map.get_minimum_road_edge_distance_excluding_camp_spur(base_core.global_position)
 		- BesprenWorldMap2D.CORE_COLLISION_RADIUS
 		>= BesprenWorldMap2D.STARTING_CAMP_REQUIRED_ROAD_EDGE_CLEARANCE,
 		"Mobile Base footprint preserves at least 1600 units from every road edge"

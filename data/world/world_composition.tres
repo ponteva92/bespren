@@ -7,7 +7,7 @@
 [sub_resource type="Resource" id="Resource_jkyf0"]
 script = ExtResource("1_2v2d8")
 placement_name = &"StartingCampBedding"
-offset = Vector2(-650, -300)
+offset = Vector2(-780, -240)
 size = Vector2(240, 120)
 rotation = -0.12
 visual_kind = 10
@@ -110,9 +110,10 @@ pockets = PackedVector4Array(-5700, -920, 740, 360, -3100, 920, 680, 360, 3200, 
 script = ExtResource("3_pi1mq")
 camp_position = Vector2(9950, 2400)
 camp_satellites = Array[ExtResource("1_2v2d8")]([SubResource("Resource_jkyf0"), SubResource("Resource_aey55"), SubResource("Resource_uphs5")])
-road_names = PackedStringArray("spine_east_west", "spine_north_south", "kaupunki_branch", "ostari_branch", "kyla_west_path", "kyla_east_path", "wilderness_perimeter", "metsa_north_east_track")
-road_routes = Array[PackedVector2Array]([PackedVector2Array(-12288, 0, 0, 0, 12288, 0), PackedVector2Array(0, -12288, 0, 0, 0, 12288), PackedVector2Array(-8192, -11264, -8192, 0, 0, 0), PackedVector2Array(0, -5500, 9000, -5500, 9000, 0), PackedVector2Array(0, 4096, -8192, 4096, -8192, 11264), PackedVector2Array(0, 4096, 8192, 4096, 8192, 11264), PackedVector2Array(-12288, -12288, 12288, -12288, 12288, 12288, -12288, 12288, -12288, -12288), PackedVector2Array(9000, -5500, 11264, -5500, 11264, -11264)])
-road_grades = PackedInt32Array(0, 0, 0, 0, 1, 1, 2, 1)
+road_names = PackedStringArray("spine_east_west", "spine_north_south", "kaupunki_branch", "ostari_branch", "kyla_west_path", "kyla_east_path", "wilderness_perimeter", "metsa_north_east_track", "camp_spur")
+road_routes = Array[PackedVector2Array]([PackedVector2Array(-12288, 0, 0, 0, 12288, 0), PackedVector2Array(0, -12288, 0, 0, 0, 12288), PackedVector2Array(-8192, -11264, -8192, 0, 0, 0), PackedVector2Array(0, -5500, 9000, -5500, 9000, 0), PackedVector2Array(0, 4096, -8192, 4096, -8192, 11264), PackedVector2Array(0, 4096, 8192, 4096, 8192, 11264), PackedVector2Array(-12288, -12288, 12288, -12288, 12288, 12288, -12288, 12288, -12288, -12288), PackedVector2Array(9000, -5500, 11264, -5500, 11264, -11264), PackedVector2Array(9530, 2200, 9480, 1650, 9430, 1050, 9520, 450, 9650, 0)])
+road_grades = PackedInt32Array(0, 0, 0, 0, 1, 1, 2, 1, 1)
+camp_spur_route = 8
 forest_cell_rects = Array[Rect2i]([Rect2i(10, 0, 4, 9), Rect2i(0, 5, 3, 9)])
 district_names = PackedStringArray("kaupunki", "ostari", "kyla_west", "kyla_east")
 district_biomes = PackedInt32Array(1, 2, 3, 4)

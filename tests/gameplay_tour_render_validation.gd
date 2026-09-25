@@ -87,6 +87,7 @@ func _build_stops() -> Array[Dictionary]:
 		_stop(&"camp_day", camp, false, "Base Core clearing, satellites, teaching nodes"),
 		_stop(&"camp_night", camp, true, "Amber Gold must stay the dominant warm source"),
 		_stop(&"camp_outskirts", camp + Vector2(-900.0, 250.0), false, "Edge of the hero bowl"),
+		_stop(&"camp_spur", _route_midpoint(world_map.get_camp_spur_route()), false, "The dirt spur leaving the bowl for the spine"),
 		_stop(&"city_street", Vector2(-8150.0, -7900.0), false, "Kaupunki street on the asphalt branch"),
 		_stop(&"city_block", _obstacle_position(&"CityBuilding_02") + Vector2(900.0, 500.0), false, "Shell corner and ground dress"),
 		_stop(&"city_choke", Vector2(-9200.0, -6000.0), false, "Dense ruin choke"),
@@ -114,6 +115,12 @@ func _build_stops() -> Array[Dictionary]:
 
 func _stop(stop_id: StringName, focus: Vector2, night: bool, intent: String) -> Dictionary:
 	return {&"id": stop_id, &"focus": focus, &"night": night, &"intent": intent}
+
+
+func _route_midpoint(route: PackedVector2Array) -> Vector2:
+	if route.is_empty():
+		return world_map.get_core_position()
+	return route[route.size() / 2]
 
 
 func _obstacle_position(obstacle_name: StringName) -> Vector2:

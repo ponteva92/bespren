@@ -11,8 +11,8 @@ extends Node2D
 ## into paths toward the things they walk to.
 ##
 ## So this draws a soft patch of packed earth under the bowl and a worn path to
-## each satellite, on the ground layer just above the terrain and below every
-## decoration, road verge and prop. It is built the way `GroundShadow` and the
+## each satellite, on the ground layer above the terrain and below the roads,
+## every decoration and every prop. It is built the way `GroundShadow` and the
 ## moss patches are: stacked low-alpha steps with irregular outlines, so the
 ## patch has a core and no edge. It wears the dirt road's grain material, so the
 ## clearing, the paths and the dirt spur are one surface, and like that material
@@ -21,7 +21,11 @@ extends Node2D
 ## Visual only: no collision, flow, resource or gameplay state, configured after
 ## the canonical pipeline like every dress layer.
 
-const CLEARING_Z: int = -19
+## On the ground layer itself, ordered in the map scene after the terrain and
+## before `TerrainDetails`, so the trodden earth lies over the forest floor and
+## under the roads: the camp's dirt spur starts inside the bowl and has to read
+## as the path leaving it, not as ground the clearing has painted over.
+const CLEARING_Z: int = -20
 ## Packed earth: warmer and a step lighter than the forest floor it replaces.
 ## Stacked, the core lands near luma 55 over the floor's 50 - a clearing, and
 ## still well under the refuge's amber, which stays the only warm focal mass.

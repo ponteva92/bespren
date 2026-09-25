@@ -41,13 +41,17 @@ func get_routes() -> Array[PackedVector2Array]:
 	return copy
 
 
-func get_minimum_road_edge_distance(world_position: Vector2) -> float:
+func get_minimum_road_edge_distance(world_position: Vector2, excluded_route: int = -1) -> float:
 	## Returns physical clearance from a point to the nearest rendered outer
 	## road edge, rather than merely measuring to its centerline.
+	## [param excluded_route] skips one route, which is how the camp's seclusion
+	## rules measure every road except the camp's own spur.
 	if not world_position.is_finite():
 		return 0.0
 	var shortest: float = INF
 	for route_index: int in range(_routes.size()):
+		if route_index == excluded_route:
+			continue
 		var route: PackedVector2Array = _routes[route_index]
 		var is_dirt: bool = (
 			route_index < _dirt_flags.size()

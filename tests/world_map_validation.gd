@@ -33,12 +33,13 @@ const EXPECTED_WILDERNESS_ACCENT_ATLAS_PATH: String = (
 	"res://assets/2d/environment/polyhaven/polyhaven_environment_atlas.png"
 )
 ## Re-pinned for the East Kylat relayout (hamlet plus walled grave plot), which
-## moves colliding houses, walls, poles, a ruin and three dressing props. The
+## moves colliding houses, walls, poles, a ruin and three dressing props, and
+## again for the camp's dirt spur, whose verge keeps the forest stands off it. The
 ## visual-only layers added beside it - understory, camp clearing and grave
 ## rows - are configured after the bake and write no flow, which this pin keeps
 ## proving: any change to them leaves it where it is.
 const EXPECTED_FLOW_FIELD_MASK_HASH: String = (
-	"23bcaad296d5597cc67dfc6ec6ea94faaf2e3c7d8969417b71279bb095c6bf4a"
+	"b221892cd1bcc1aab0c2d0fad8895b9144b3cf38d0e19c7a1c19992200a53fd7"
 )
 const AMBIENT_SCENERY_CAMP_CLEAR_RADIUS: float = 1760.0
 const AMBIENT_SCENERY_ROAD_CLEARANCE: float = 480.0
@@ -70,7 +71,7 @@ const STARTER_RESOURCE_OFFSETS: Array[Vector2] = [
 	Vector2(130.0, -430.0),
 ]
 const EXPECTED_CAMP_SATELLITE_OFFSETS: Dictionary = {
-	&"StartingCampBedding": Vector2(-650.0, -300.0),
+	&"StartingCampBedding": Vector2(-780.0, -240.0),
 	&"StartingCampSupplyCache": Vector2(350.0, 650.0),
 	&"StartingCampMedicalCache": Vector2(0.0, 720.0),
 }
@@ -175,19 +176,19 @@ func _validate_dimensions(world_map: BesprenWorldMap2D) -> void:
 	)
 	_check(
 		is_equal_approx(
-			world_map.get_minimum_road_edge_distance(
+			world_map.get_minimum_road_edge_distance_excluding_camp_spur(
 				BesprenWorldMap2D.STARTING_CAMP_POSITION
 			),
 			EXPECTED_STARTING_CAMP_ROAD_EDGE_DISTANCE
 		),
-		"Starting camp center is exactly 2098 world units from its nearest road edge"
+		"Starting camp center is exactly 2098 world units from its nearest road edge other than its own spur"
 	)
 	_check(
-		world_map.get_minimum_road_edge_distance(
+		world_map.get_minimum_road_edge_distance_excluding_camp_spur(
 			BesprenWorldMap2D.STARTING_CAMP_POSITION
 		) - BesprenWorldMap2D.CORE_COLLISION_RADIUS
 		>= BesprenWorldMap2D.STARTING_CAMP_REQUIRED_ROAD_EDGE_CLEARANCE,
-		"Complete Base footprint preserves at least 1600 units from every road edge"
+		"Complete Base footprint preserves at least 1600 units from every road edge but its spur"
 	)
 	var expected_rect: Rect2 = Rect2(
 		Vector2(-EXPECTED_HALF_EXTENT, -EXPECTED_HALF_EXTENT),
@@ -270,7 +271,7 @@ func _validate_render_layers(world_map: BesprenWorldMap2D) -> void:
 		_validate_nature_tiles(world_map, terrain_tiles)
 	if road_network != null:
 		_check_absolute_z(road_network, EXPECTED_GROUND_Z, "RoadNetwork")
-		_check(road_network.get_route_count() == 8, "Road network exposes all eight authored routes")
+		_check(road_network.get_route_count() == 9, "Road network exposes all nine authored routes, the camp spur included")
 		var routes_are_valid: bool = true
 		for route: PackedVector2Array in road_network.get_routes():
 			if route.size() < 2:
@@ -957,7 +958,7 @@ func _validate_collision_contract(world_map: BesprenWorldMap2D) -> void:
 			if _distance_to_routes(obstacle.position, world_map.get_road_routes()) < footprint_radius + CAMP_ROUTE_MARGIN:
 				every_camp_satellite_clears_routes = false
 			if (
-				world_map.get_minimum_road_edge_distance(obstacle.position)
+				world_map.get_minimum_road_edge_distance_excluding_camp_spur(obstacle.position)
 				- obstacle.half_size.length()
 				< BesprenWorldMap2D.STARTING_CAMP_REQUIRED_ROAD_EDGE_CLEARANCE
 			):
@@ -995,7 +996,7 @@ func _validate_collision_contract(world_map: BesprenWorldMap2D) -> void:
 	_check(every_camp_satellite_clears_routes, "Camp satellites preserve a physical margin from every authored road segment")
 	_check(
 		every_camp_satellite_preserves_deep_road_clearance,
-		"Every complete camp-satellite footprint stays at least 1600 units from every road edge"
+		"Every complete camp-satellite footprint stays at least 1600 units from every road edge but the spur"
 	)
 	_check(every_camp_satellite_is_in_forest, "Every camp satellite remains inside the secluded Forest biome")
 	var spawn_and_resource_lanes_clear: bool = true
@@ -1009,7 +1010,7 @@ func _validate_collision_contract(world_map: BesprenWorldMap2D) -> void:
 		):
 			spawn_and_resource_lanes_clear = false
 		if (
-			world_map.get_minimum_road_edge_distance(
+			world_map.get_minimum_road_edge_distance_excluding_camp_spur(
 				BesprenWorldMap2D.STARTING_CAMP_POSITION + offset
 			) - PLAYER_RADIUS
 			< BesprenWorldMap2D.STARTING_CAMP_REQUIRED_ROAD_EDGE_CLEARANCE
@@ -1446,9 +1447,14 @@ func _validate_camp_clearing(world_map: BesprenWorldMap2D) -> void:
 	if clearing == null:
 		return
 	_check_absolute_z(clearing, WorldCampClearing2D.CLEARING_Z, "Camp clearing")
+	var terrain_details: Node = world_map.get_node_or_null(^"TerrainDetails")
+	var terrain_overlay: Node = world_map.get_node_or_null(^"TerrainMaterialOverlay")
 	_check(
-		clearing.z_index > EXPECTED_GROUND_Z and clearing.z_index < EXPECTED_DECOR_Z,
-		"Camp clearing sits above the terrain and below every dress layer"
+		terrain_details != null
+		and terrain_overlay != null
+		and terrain_overlay.get_index() < clearing.get_index()
+		and clearing.get_index() < terrain_details.get_index(),
+		"Camp clearing draws over the terrain and under the roads, so the spur leaves it visibly"
 	)
 	_check(
 		clearing.position.is_equal_approx(BesprenWorldMap2D.STARTING_CAMP_POSITION),
@@ -1608,6 +1614,46 @@ func _validate_composition(world_map: BesprenWorldMap2D) -> void:
 		== BesprenWorldMap2D.Biome.FOREST,
 		"The Metsa threat weenie's reserved seat is in Metsa"
 	)
+	# The dirt spur (contract D-02): the camp's readable exit, the one road the
+	# seclusion ring admits. It starts inside the trodden clearing, clear of the
+	# Base, spawn lanes and teaching nodes, and ends on the asphalt spine, short
+	# enough that the 30s loop stays a tight Metsa circuit.
+	var spur_index: int = composition.camp_spur_route
+	_check(
+		spur_index >= 0 and composition.road_grades[spur_index] == WorldCompositionContract.RoadGrade.DIRT,
+		"The composition names a dirt camp spur"
+	)
+	var spur: PackedVector2Array = world_map.get_camp_spur_route()
+	if spur.size() >= 2:
+		var camp: Vector2 = composition.camp_position
+		var start_distance: float = spur[0].distance_to(camp)
+		_check(
+			start_distance > BesprenWorldMap2D.CORE_COLLISION_RADIUS + WorldRoadNetwork2D.DIRT_OUTER_WIDTH * 0.5
+			and start_distance < BesprenWorldMap2D.STARTING_CAMP_OPEN_RADIUS,
+			"The spur starts in the camp's open ring, in frame from the refuge and clear of the Base (%.0f units out)" % start_distance
+		)
+		var ends_on_spine: bool = false
+		for route_index: int in range(composition.road_routes.size()):
+			if composition.road_grades[route_index] != WorldCompositionContract.RoadGrade.ASPHALT_SPINE:
+				continue
+			if _distance_to_routes(spur[spur.size() - 1], [composition.road_routes[route_index]]) < 1.0:
+				ends_on_spine = true
+		_check(ends_on_spine, "The spur ends on the asphalt spine, so asphalt always leads home")
+		var spur_length: float = 0.0
+		for point_index: int in range(1, spur.size()):
+			spur_length += spur[point_index].distance_to(spur[point_index - 1])
+		_check(spur_length <= 2600.0, "The spur is a short exit, not a commute (%.0f units)" % spur_length)
+		var lanes_clear_of_spur: bool = true
+		var lane_offsets: Array[Vector2] = COOP_SPAWN_OFFSETS.duplicate()
+		lane_offsets.append_array(STARTER_RESOURCE_OFFSETS)
+		for offset: Vector2 in lane_offsets:
+			if _distance_to_routes(camp + offset, [spur]) < WorldRoadNetwork2D.DIRT_OUTER_WIDTH * 0.5 + PLAYER_RADIUS:
+				lanes_clear_of_spur = false
+		_check(lanes_clear_of_spur, "No spawn lane or teaching node stands on the spur")
+		_check(
+			world_map.get_minimum_road_edge_distance(camp) < world_map.get_minimum_road_edge_distance_excluding_camp_spur(camp),
+			"The spur is the camp's nearest road; every other road keeps the seclusion ring"
+		)
 	var regions: Dictionary[StringName, Rect2] = world_map.get_biome_regions()
 	_check(
 		regions.has(&"kaupunki") and regions.has(&"ostari") and regions.has(&"kyla_west") and regions.has(&"kyla_east"),

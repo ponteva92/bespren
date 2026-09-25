@@ -35,10 +35,12 @@ const RENDER_CHUNK_SIZE: float = 2048.0
 const CELL_SIZE: float = 230.0
 const FOREST_FILL: float = 0.72
 ## The contract's far wilderness is "the quieter empty" beyond the Metsa circuit
-## (D-06, D-07), so it keeps a thin scatter rather than a forest's. At this fill
-## the wilderness pockets still host the wild-atlas trial card that
-## `existing_wild_atlas_context_validation` places there; at the forest's fill
-## two more of them could not.
+## (D-06, D-07), so it keeps a thin scatter rather than a forest's, and leaves
+## the composition's wilderness pockets to the layers that dress them. Filling
+## the pockets as well made two more of them unable to host the wild-atlas trial
+## card `existing_wild_atlas_context_validation` places there - once at the
+## forest's fill, and again at this one after the camp spur shifted the ambient
+## layer's sequential stream into pocket 4.
 const WILDERNESS_FILL: float = 0.24
 const RIM_FILL: float = 0.92
 ## The empty bowl. Wider than the 520-unit colliding clear and the 1,360-unit
@@ -209,6 +211,11 @@ func _consider_cell(cell_x: int, cell_y: int, seed_value: int) -> void:
 			BesprenWorldMap2D.Biome.FOREST:
 				fill = FOREST_FILL * forest_share
 			BesprenWorldMap2D.Biome.WILDERNESS:
+				# The wilderness pockets are the composition's authored places,
+				# dressed by the ambient and accent layers and reserved for the
+				# wild-atlas trial card; the understory is the ground between them.
+				if _is_in_wilderness_pocket(candidate):
+					return
 				fill = WILDERNESS_FILL * forest_share
 			_:
 				return
@@ -287,6 +294,17 @@ func _sample_forest_share(world_position: Vector2) -> float:
 	if total <= 0.0:
 		return 0.0
 	return pixel.r / total
+
+
+func _is_in_wilderness_pocket(world_position: Vector2) -> bool:
+	for pocket: Vector4 in WorldAmbientScenery2D.WILDERNESS_POCKETS:
+		var local: Vector2 = Vector2(
+			(world_position.x - pocket.x) / maxf(pocket.z, 1.0),
+			(world_position.y - pocket.y) / maxf(pocket.w, 1.0)
+		)
+		if local.length_squared() <= 1.0:
+			return true
+	return false
 
 
 func _biome_at(world_position: Vector2) -> int:

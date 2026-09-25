@@ -45,6 +45,12 @@ material = SubResource("ShaderMaterial_terrain_blend")
 scale = Vector2(28, 28)
 texture = ExtResource("4_terrain_atlas")
 
+[node name="CampClearing" type="Node2D" parent="."]
+unique_name_in_owner = true
+z_index = -20
+z_as_relative = false
+script = ExtResource("10_camp_clearing")
+
 [node name="TerrainDetails" type="Node2D" parent="."]
 unique_name_in_owner = true
 z_index = -20
@@ -60,12 +66,6 @@ unique_name_in_owner = true
 z_index = -20
 z_as_relative = false
 script = ExtResource("2_roads")
-
-[node name="CampClearing" type="Node2D" parent="."]
-unique_name_in_owner = true
-z_index = -19
-z_as_relative = false
-script = ExtResource("10_camp_clearing")
 
 [node name="GroundCover" type="Node2D" parent="."]
 unique_name_in_owner = true

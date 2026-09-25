@@ -286,6 +286,22 @@ func get_minimum_road_edge_distance(world_position: Vector2) -> float:
 	return road_network.get_minimum_road_edge_distance(world_position)
 
 
+## Clearance to every road except the camp's own dirt spur. The contract keeps
+## the refuge secluded from roads (CampRoadEdge) and makes the spur the one
+## authored road allowed to cross that ring, so every seclusion rule - the
+## Base's 1,600 units, the satellites', the spawn and teaching lanes' - measures
+## with this, while dress layers keep using the full distance so the spur stays
+## a clear path through the trees.
+func get_minimum_road_edge_distance_excluding_camp_spur(world_position: Vector2) -> float:
+	return road_network.get_minimum_road_edge_distance(world_position, COMPOSITION.camp_spur_route)
+
+
+func get_camp_spur_route() -> PackedVector2Array:
+	if COMPOSITION.camp_spur_route < 0 or COMPOSITION.camp_spur_route >= COMPOSITION.road_routes.size():
+		return PackedVector2Array()
+	return COMPOSITION.road_routes[COMPOSITION.camp_spur_route]
+
+
 func get_obstacle_nodes() -> Array[WorldObstacle2D]:
 	return _obstacles.duplicate()
 

@@ -534,7 +534,7 @@ func _validate_integrated_game_world() -> void:
 			"Runtime camp uses the exact deep east-forest position (9950, 2400)"
 		)
 		_check(
-			world_map.get_minimum_road_edge_distance(
+			world_map.get_minimum_road_edge_distance_excluding_camp_spur(
 				BesprenWorldMap2D.STARTING_CAMP_POSITION
 			) - BesprenWorldMap2D.CORE_COLLISION_RADIUS
 			>= BesprenWorldMap2D.STARTING_CAMP_REQUIRED_ROAD_EDGE_CLEARANCE,
@@ -572,7 +572,7 @@ func _validate_integrated_game_world() -> void:
 			):
 				starter_resources_match = false
 			if (
-				world_map.get_minimum_road_edge_distance(resource_position) - 34.0
+				world_map.get_minimum_road_edge_distance_excluding_camp_spur(resource_position) - 34.0
 				< BesprenWorldMap2D.STARTING_CAMP_REQUIRED_ROAD_EDGE_CLEARANCE
 			):
 				starter_resource_approaches_are_deep = false
