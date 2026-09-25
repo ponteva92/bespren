@@ -82,6 +82,78 @@ const EAST_REST_PLOT: Rect2 = Rect2(8950.0, 7500.0, 2400.0, 1800.0)
 ## deliberately narrower than the flow raster's 430-unit gap, so the horde has
 ## no reason to route through a graveyard.
 const EAST_REST_WALL_GAP: float = 150.0
+## The middle of East Kylat's hamlet of three houses west of its road, which
+## their yards face.
+const EAST_HAMLET_CENTER: Vector2 = Vector2(6000.0, 8150.0)
+## Kaupunki's job is a dense urban choke (DIST-01). Six blocks and eight ruins
+## on a 10,240-unit square left the spine running through a parking lot: at the
+## gameplay zoom a frame held one building corner on flat grey, and 5 percent of
+## its pixels departed from their neighbourhood. Street walls now line both
+## sides of the asphalt spine with shells, set close enough that a survivor on
+## the carriageway sees both walls - the frame is 1,263 units wide, so a face
+## 420 units off the centreline lands 160 screen pixels from the middle - and
+## broken by alleys that open sightlines into the back lots. The composition's
+## `city_choke` seat is the one stretch with no alley: there the walls step in
+## and run unbroken for the landmark's diameter, which is the pinch it names.
+## They are built after every other obstacle, so no earlier obstacle's stable
+## seed moves, and they skip any slot an existing obstacle already holds - a
+## set-back ruin or a wreck on the kerb reads as a recess in the frontage.
+const CITY_SPINE_X: float = -8192.0
+const STREET_WALL_PREFIX: String = "CityStreetWall_"
+const STREET_WALL_SPAN: Vector2 = Vector2(-11000.0, -2600.0)
+## The asphalt bed and shoulder end 270 units off the centreline, so 420 leaves
+## a 150-unit kerb. The flow raster pads every footprint by
+## `FLOW_FIELD_RASTER_CLEARANCE` (215), which keeps the band from -8397 to -7987
+## open, and both flow-cell centres either side of the spine (-8320 and -8064)
+## lie inside it.
+const STREET_WALL_FACE_OFFSET: float = 420.0
+## At the choke the faces close to 360: the open raster band narrows to -8337 to
+## -8047 and still holds both centres, so the pinch never cuts the spine's flow.
+## No rotation is allowed there, because a tilted block would eat that margin.
+const STREET_WALL_CHOKE_FACE_OFFSET: float = 360.0
+const STREET_WALL_DEPTH: Vector2 = Vector2(560.0, 720.0)
+const STREET_WALL_LENGTH: Vector2 = Vector2(520.0, 760.0)
+const STREET_WALL_ALLEY: Vector2 = Vector2(360.0, 620.0)
+## The east side starts this far down the street north of the choke, so its
+## alleys do not line up with the west side's. South of the choke the holders
+## already break the rhythm, and a second stagger only left the east kerb bare
+## for the first 830 units out of the pinch.
+const STREET_WALL_EAST_STAGGER: float = 470.0
+const STREET_WALL_CHOKE_BLOCKS: int = 2
+## The shallowest storefront worth building in front of a set-back holder: at
+## 0.94 of its depth the sprite is still 280 units, 107 screen pixels, wide.
+const STREET_WALL_SHALLOW_DEPTH: float = 300.0
+const STREET_WALL_CHOKE_SEAM: float = 60.0
+const STREET_WALL_OBSTACLE_CLEARANCE: float = 120.0
+const STREET_WALL_MAX_ROTATION: float = 0.035
+const STREET_WALL_NOISE_BASE: int = WORLD_BUILD_SEED + 307
+## The pavement runs the whole of the spine inside Kaupunki, past the walls'
+## ends, so the kerb is what announces the district before the first frontage.
+const CITY_PAVEMENT_SPAN: Vector2 = Vector2(-11200.0, -2100.0)
+## Ostari's job is mall salvage (DIST-01), and from above a mall is its car
+## park: two rows of bays either side of the mall road at y -5500, between the
+## pylons' lots and clear of both shells' berms, with abandoned cars left askew
+## across them. The rows open onto the road's outer edge 270 units off its
+## centreline, 40 units back from the shoulder.
+const OSTARI_ROAD_Y: float = -5500.0
+## 520 deep rather than a car's full 560, because the two rotated corridor
+## ruins' bounds reach 12 units past 560 into the south row's heads.
+const OSTARI_PARKING_ROWS: Array[Rect2] = [
+	Rect2(2300.0, -6330.0, 5100.0, 520.0),
+	Rect2(2300.0, -5190.0, 5100.0, 520.0),
+]
+const OSTARI_PARKED_CAR_PREFIX: String = "OstariParkedCar_"
+## Askew rather than square in a bay, because the local wreck bake is a
+## three-quarter view: turned 90 degrees it would stop reading as a car, and
+## an abandoned lot is not parked straight anyway.
+const OSTARI_PARKED_CARS: Array[Vector3] = [
+	Vector3(3350.0, -6080.0, 0.30),
+	Vector3(5250.0, -6110.0, -0.26),
+	Vector3(6750.0, -6060.0, 0.18),
+	Vector3(3900.0, -4900.0, -0.22),
+	Vector3(4700.0, -4880.0, 0.34),
+]
+const OSTARI_PARKED_CAR_SIZE: Vector2 = Vector2(560.0, 280.0)
 const DENSE_FOREST_TREES_PER_CELL: int = 3
 const DENSE_WILDERNESS_TREES_PER_CELL: int = 1
 const DENSE_TREE_CAMP_CLEAR_RADIUS: float = 1800.0
@@ -101,6 +173,8 @@ const MIN_WILDERNESS_GROVE_TREE_COUNT: int = 35
 @onready var forest_understory: WorldForestUnderstory2D = %ForestUnderstory
 @onready var camp_clearing: WorldCampClearing2D = %CampClearing
 @onready var graveyard: WorldGraveyard2D = %Graveyard
+@onready var urban_fabric: WorldUrbanFabric2D = %UrbanFabric
+@onready var village_yards: WorldVillageYards2D = %VillageYards
 @onready var ambient_scenery: Node2D = %AmbientScenery
 @onready var structures: Node2D = %Structures
 @onready var world_bounds: Node2D = %WorldBounds
@@ -123,6 +197,7 @@ var _obstacle_broadphase_ready: bool = false
 var _flow_field_blocked: PackedByteArray = PackedByteArray()
 var _boundary_count: int = 0
 var _obstacle_sequence: int = 0
+var _street_wall_count: int = 0
 var _core_world_position: Vector2 = STARTING_CAMP_POSITION
 
 
@@ -149,6 +224,8 @@ func ensure_built() -> void:
 	_build_density_landmarks()
 	_build_starting_camp_satellites()
 	_build_forest_perimeter()
+	_build_city_street_walls()
+	_build_ostari_parked_cars()
 	ambient_scenery.call(
 		&"configure",
 		PLAYABLE_HALF_EXTENT,
@@ -194,6 +271,19 @@ func ensure_built() -> void:
 	)
 	camp_clearing.configure(STARTING_CAMP_POSITION, get_camp_satellite_positions())
 	graveyard.configure(EAST_REST_PLOT.grow(-110.0))
+	var choke_center: Vector2 = COMPOSITION.get_landmark_position(&"city_choke")
+	var choke_half_length: float = COMPOSITION.get_landmark_radius(&"city_choke")
+	urban_fabric.configure(
+		CITY_SPINE_X,
+		CITY_PAVEMENT_SPAN,
+		WorldRoadNetwork2D.ASPHALT_OUTER_WIDTH * 0.5,
+		STREET_WALL_FACE_OFFSET,
+		Vector2(choke_center.y - choke_half_length, choke_center.y + choke_half_length),
+		STREET_WALL_CHOKE_FACE_OFFSET,
+		OSTARI_PARKING_ROWS,
+		OSTARI_ROAD_Y
+	)
+	_configure_village_yards()
 
 
 func get_camp_satellite_positions() -> PackedVector2Array:
@@ -804,6 +894,190 @@ func _can_place_density_obstacle(world_position: Vector2, footprint_radius: floa
 	):
 		return false
 	return is_position_walkable(world_position, footprint_radius)
+
+
+func _build_city_street_walls() -> void:
+	var choke_center: Vector2 = COMPOSITION.get_landmark_position(&"city_choke")
+	var choke_half_length: float = COMPOSITION.get_landmark_radius(&"city_choke")
+	var choke: Vector2 = Vector2(choke_center.y - choke_half_length, choke_center.y + choke_half_length)
+	for side: int in [-1, 1]:
+		var stagger: float = STREET_WALL_EAST_STAGGER if side > 0 else 0.0
+		var salt: int = STREET_WALL_NOISE_BASE + (side + 1) * 1000
+		_place_street_wall_run(side, STREET_WALL_SPAN.x + stagger, choke.x - STREET_WALL_ALLEY.x, salt)
+		_place_street_wall_choke(side, choke, salt + 500)
+		_place_street_wall_run(side, choke.y + STREET_WALL_ALLEY.x, STREET_WALL_SPAN.y, salt + 250)
+
+
+## One side of the street from [param from_y] to [param to_y]: a block, an
+## alley, a block. When a slot is already held - a set-back ruin, a wreck on the
+## kerb, a scrap heap - the run slides past the holder and carries on, so the
+## holder becomes part of the frontage instead of costing the street a block.
+func _place_street_wall_run(side: int, from_y: float, to_y: float, salt: int) -> void:
+	var cursor: float = from_y
+	var index: int = 0
+	while index < 64:
+		var length: float = lerpf(
+			STREET_WALL_LENGTH.x, STREET_WALL_LENGTH.y, WorldForestUnderstory2D.hash_unit(salt + index * 13 + 1)
+		)
+		if cursor + length > to_y:
+			return
+		var depth: float = lerpf(
+			STREET_WALL_DEPTH.x, STREET_WALL_DEPTH.y, WorldForestUnderstory2D.hash_unit(salt + index * 13 + 3)
+		)
+		var alley: float = lerpf(
+			STREET_WALL_ALLEY.x, STREET_WALL_ALLEY.y, WorldForestUnderstory2D.hash_unit(salt + index * 13 + 5)
+		)
+		var wall_rotation: float = (
+			WorldForestUnderstory2D.hash_unit(salt + index * 13 + 7) * 2.0 - 1.0
+		) * STREET_WALL_MAX_ROTATION
+		var center: Vector2 = Vector2(
+			CITY_SPINE_X + float(side) * (STREET_WALL_FACE_OFFSET + depth * 0.5),
+			cursor + length * 0.5
+		)
+		var holder: Vector2 = _street_wall_slot_holder(side, center, Vector2(depth, length))
+		index += 1
+		if not is_nan(holder.x):
+			# A holder set back from the kerb leaves room for a shallow storefront
+			# in front of it, which keeps the frontage on the kerb line; one that
+			# reaches the kerb is slid past instead.
+			var room: float = holder.y - STREET_WALL_OBSTACLE_CLEARANCE - STREET_WALL_FACE_OFFSET
+			if room < STREET_WALL_SHALLOW_DEPTH:
+				cursor = maxf(cursor + 1.0, holder.x + STREET_WALL_OBSTACLE_CLEARANCE)
+				continue
+			depth = minf(depth, room)
+			center.x = CITY_SPINE_X + float(side) * (STREET_WALL_FACE_OFFSET + depth * 0.5)
+			if not is_nan(_street_wall_slot_holder(side, center, Vector2(depth, length)).x):
+				cursor = maxf(cursor + 1.0, holder.x + STREET_WALL_OBSTACLE_CLEARANCE)
+				continue
+		if not _street_wall_slot_is_clear_of_roads(center, Vector2(depth, length)):
+			cursor += length + alley
+			continue
+		_add_street_wall(center, Vector2(depth, length), wall_rotation)
+		cursor += length + alley
+
+
+## The choke's unbroken frontage: blocks that fill the landmark's diameter with
+## only a seam between them, split differently on each side of the street and
+## never rotated, because a tilted block would eat the flow margin above.
+func _place_street_wall_choke(side: int, choke: Vector2, salt: int) -> void:
+	var weights: PackedFloat32Array = PackedFloat32Array()
+	var weight_total: float = 0.0
+	for block_index: int in range(STREET_WALL_CHOKE_BLOCKS):
+		var weight: float = 0.75 + WorldForestUnderstory2D.hash_unit(salt + block_index * 13 + 1) * 0.5
+		weights.append(weight)
+		weight_total += weight
+	var fill: float = (choke.y - choke.x) - STREET_WALL_CHOKE_SEAM * float(STREET_WALL_CHOKE_BLOCKS - 1)
+	var cursor: float = choke.x
+	for block_index: int in range(STREET_WALL_CHOKE_BLOCKS):
+		var length: float = fill * weights[block_index] / weight_total
+		var depth: float = lerpf(
+			STREET_WALL_DEPTH.x, STREET_WALL_DEPTH.y, WorldForestUnderstory2D.hash_unit(salt + block_index * 13 + 3)
+		)
+		var center: Vector2 = Vector2(
+			CITY_SPINE_X + float(side) * (STREET_WALL_CHOKE_FACE_OFFSET + depth * 0.5),
+			cursor + length * 0.5
+		)
+		if (
+			is_nan(_street_wall_slot_holder(side, center, Vector2(depth, length)).x)
+			and _street_wall_slot_is_clear_of_roads(center, Vector2(depth, length))
+		):
+			_add_street_wall(center, Vector2(depth, length), 0.0)
+		else:
+			push_error("City choke slot is not clear at %s" % center)
+		cursor += length + STREET_WALL_CHOKE_SEAM
+
+
+## Each village house faces the place it belongs to: the west houses the west
+## yard's open middle, the east hamlet its own huddle, and the caretaker's house
+## the grave plot it keeps.
+func _configure_village_yards() -> void:
+	var homesteads: Array[Vector4] = []
+	var half_sizes: PackedVector2Array = PackedVector2Array()
+	var west_yard: Vector2 = COMPOSITION.get_landmark_position(&"west_yard")
+	for obstacle: WorldObstacle2D in _obstacles:
+		var obstacle_name: String = String(obstacle.name)
+		var target: Vector2 = Vector2.INF
+		if obstacle_name.begins_with("WestVillageHouse_"):
+			target = west_yard
+		elif obstacle_name.begins_with("EastVillageHouse_"):
+			target = EAST_HAMLET_CENTER if obstacle.position.x < EAST_REST_ROAD_X else EAST_REST_PLOT.get_center()
+		if not target.is_finite():
+			continue
+		homesteads.append(Vector4(obstacle.position.x, obstacle.position.y, target.x, target.y))
+		half_sizes.append(obstacle.half_size)
+	village_yards.configure(
+		homesteads,
+		half_sizes,
+		Callable(self, &"is_position_walkable"),
+		Callable(self, &"get_minimum_road_edge_distance")
+	)
+
+
+func _build_ostari_parked_cars() -> void:
+	for car_index: int in range(OSTARI_PARKED_CARS.size()):
+		var car: Vector3 = OSTARI_PARKED_CARS[car_index]
+		var footprint_radius: float = OSTARI_PARKED_CAR_SIZE.length() * 0.5
+		if not is_position_walkable(Vector2(car.x, car.y), footprint_radius):
+			push_error("Ostari parked car slot is not clear: %d" % car_index)
+			continue
+		_add_rectangle_obstacle(
+			StringName("%s%02d" % [OSTARI_PARKED_CAR_PREFIX, car_index]),
+			Vector2(car.x, car.y),
+			OSTARI_PARKED_CAR_SIZE,
+			WorldObstacle2D.VisualKind.VEHICLE_WRECK,
+			car.z
+		)
+
+
+func _add_street_wall(center: Vector2, size: Vector2, wall_rotation: float) -> void:
+	_add_rectangle_obstacle(
+		StringName("%s%02d" % [STREET_WALL_PREFIX, _street_wall_count]),
+		center,
+		size,
+		WorldObstacle2D.VisualKind.CITY_BUILDING,
+		wall_rotation
+	)
+	_street_wall_count += 1
+
+
+## Whatever already holds the slot, as (its far edge in y, its nearest face's
+## distance from the spine), or NAN when the slot is free. Street walls do not
+## hold slots against each other: they space themselves through their alleys
+## and the choke's seams.
+func _street_wall_slot_holder(side: int, center: Vector2, size: Vector2) -> Vector2:
+	var slot: Rect2 = Rect2(center - size * 0.5, size).grow(STREET_WALL_OBSTACLE_CLEARANCE)
+	var holder: Vector2 = Vector2(NAN, NAN)
+	for obstacle: WorldObstacle2D in _obstacles:
+		if String(obstacle.name).begins_with(STREET_WALL_PREFIX):
+			continue
+		var bounds: Rect2 = obstacle.get_world_bounds(0.0)
+		if not bounds.intersects(slot):
+			continue
+		var near_face: float = (
+			CITY_SPINE_X - bounds.end.x if side < 0 else bounds.position.x - CITY_SPINE_X
+		)
+		holder.x = bounds.end.y if is_nan(holder.x) else maxf(holder.x, bounds.end.y)
+		holder.y = near_face if is_nan(holder.y) else minf(holder.y, near_face)
+	return holder
+
+
+func _street_wall_slot_is_clear_of_roads(center: Vector2, size: Vector2) -> bool:
+	var half: Vector2 = size * 0.5
+	for corner: Vector2 in [
+		center + Vector2(-half.x, -half.y), center + Vector2(half.x, -half.y),
+		center + Vector2(-half.x, half.y), center + Vector2(half.x, half.y),
+	]:
+		if get_minimum_road_edge_distance(corner) < 60.0:
+			return false
+	return center.distance_to(STARTING_CAMP_POSITION) > DENSE_TREE_CAMP_CLEAR_RADIUS
+
+
+func get_street_wall_obstacles() -> Array[WorldObstacle2D]:
+	var walls: Array[WorldObstacle2D] = []
+	for obstacle: WorldObstacle2D in _obstacles:
+		if String(obstacle.name).begins_with(STREET_WALL_PREFIX):
+			walls.append(obstacle)
+	return walls
 
 
 ## Three restrained utility clusters turn the secluded Base clearing into a

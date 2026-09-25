@@ -79,6 +79,11 @@ func get_landmark_position(landmark: StringName) -> Vector2:
 	return landmark_positions[index] if index >= 0 and index < landmark_positions.size() else Vector2.INF
 
 
+func get_landmark_radius(landmark: StringName) -> float:
+	var index: int = landmark_names.find(String(landmark))
+	return landmark_radii[index] if index >= 0 and index < landmark_radii.size() else 0.0
+
+
 func get_district_rect_cells(district: StringName) -> Rect2i:
 	var index: int = district_names.find(String(district))
 	return district_cell_rects[index] if index >= 0 and index < district_cell_rects.size() else Rect2i()

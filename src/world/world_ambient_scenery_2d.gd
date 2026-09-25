@@ -21,6 +21,7 @@ const STRUCTURE_VISUAL_CLEARANCE: float = 0.0
 const STRUCTURAL_SILHOUETTE_SEPARATION: float = 340.0
 const PLACEMENT_ATTEMPTS: int = 192
 const TOTAL_SCENERY_COUNT: int = 640
+const ZONE_SEED_STRIDE: int = 104729
 const AMBIENT_SCENERY_CHUNK_SCRIPT: Script = preload(
 	"res://src/world/world_ambient_scenery_chunk_2d.gd"
 )
@@ -161,9 +162,14 @@ func configure(
 	_kinds.clear()
 	_variants.clear()
 	_zones.clear()
+	# Each zone draws from a stream of its own. With one stream through all
+	# seven, a district that gained or lost a footprint consumed a different
+	# number of draws and re-dealt every zone after it: Phase 4's Kaupunki walls
+	# moved the forest's trees and the camp frame's dress, 18 to 20 percent of
+	# those captures, from 7,000 units away. Now a change stays in its zone.
 	var random: RandomNumberGenerator = RandomNumberGenerator.new()
-	random.seed = seed_value
 	for zone: int in range(SceneryZone.size()):
+		random.seed = seed_value + zone * ZONE_SEED_STRIDE
 		_scatter_zone(random, zone)
 	assert(_positions.size() == TOTAL_SCENERY_COUNT)
 	z_index = AMBIENT_SCENERY_Z

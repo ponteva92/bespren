@@ -619,8 +619,23 @@ func _minimum_obstacle_clearance(candidate: Vector2, card_radius: float) -> floa
 	## footprint - a rotated rectangle or a circle - rather than to its
 	## axis-aligned world bounds, so a rotated fence run is not padded into a
 	## square that would reject candidates the sprite never reaches.
+	##
+	## Buildings are the exception, and the reason is a capture: pocket 2's card
+	## once landed 16 units off the Ostari south shell's footprint, clear by this
+	## test, and the shell's chain-link panel and berm - both drawn past the
+	## footprint at z 5 - hid half of it. A building's drawn extent is what
+	## occludes the card, so it is tested against `get_visual_bounds()`; a tree
+	## keeps its footprint, because a root card belongs under a canopy edge.
 	var minimum_clearance: float = 1000000.0
 	for obstacle: WorldObstacle2D in _obstacles:
+		if _is_building_class(obstacle):
+			var visual: Rect2 = obstacle.get_visual_bounds()
+			var outside_visual: Vector2 = Vector2(
+				maxf(maxf(visual.position.x - candidate.x, candidate.x - visual.end.x), 0.0),
+				maxf(maxf(visual.position.y - candidate.y, candidate.y - visual.end.y), 0.0)
+			)
+			minimum_clearance = minf(minimum_clearance, outside_visual.length() - card_radius)
+			continue
 		var local_point: Vector2 = (candidate - obstacle.position).rotated(-obstacle.rotation)
 		var distance: float
 		if obstacle.get_shape_kind() == WorldObstacle2D.ShapeKind.CIRCLE:
@@ -633,6 +648,15 @@ func _minimum_obstacle_clearance(candidate: Vector2, card_radius: float) -> floa
 			distance = outside.length()
 		minimum_clearance = minf(minimum_clearance, distance - card_radius)
 	return minimum_clearance
+
+
+func _is_building_class(obstacle: WorldObstacle2D) -> bool:
+	var kind: int = obstacle.get_visual_kind()
+	return (
+		kind == WorldObstacle2D.VisualKind.MALL_SHELL
+		or kind == WorldObstacle2D.VisualKind.CITY_BUILDING
+		or kind == WorldObstacle2D.VisualKind.VILLAGE_HOUSE
+	)
 
 
 func _spawn_scale_references(initial_position: Vector2) -> bool:
@@ -864,7 +888,7 @@ func _write_metadata(
 		},
 		"candidate_clearance_radius": snappedf(required_card_radius, 0.001),
 		"required_road_card_clearance": REQUIRED_ROAD_CARD_CLEARANCE,
-		"clearance_contract": "candidate origin remains walkable because the trial is a nonblocking ground-layer card; the full transformed-card radius remains inside the playable rectangle, is subtracted from road-edge distance, is clear of every colliding WorldObstacle2D collision footprint so no z_index 5 obstacle sprite is drawn over the z_index -5 card, and is tested against explicit ambient, wilderness-accent, rubble, crack, moss, and prop render envelopes",
+		"clearance_contract": "candidate origin remains walkable because the trial is a nonblocking ground-layer card; the full transformed-card radius remains inside the playable rectangle, is subtracted from road-edge distance, is clear of every colliding WorldObstacle2D collision footprint and of every building's drawn extent (its sprites, and an Ostari lot's berm and spill) so no z_index 5 obstacle is drawn over the z_index -5 card, and is tested against explicit ambient, wilderness-accent, rubble, crack, moss, and prop render envelopes",
 		"ground_cover_policy": "GroundCover is intentionally retained as substrate and not cleared. This gate prevents macro-card occlusion, not natural floor density.",
 		"capture_count": captures.size(),
 		"captures": captures,

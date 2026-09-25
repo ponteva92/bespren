@@ -145,6 +145,11 @@ const MALL_BERM_ROWS: int = 3
 const MALL_BERM_ROW_DEPTH: float = 38.0
 const MALL_CHUNK_MIN_SIZE: float = 18.0
 const MALL_CHUNK_MAX_SIZE: float = 46.0
+## How far the Ostari lot is drawn past its collision edge: the outermost
+## berm row sits 0.3 of a row outward and its largest piece reaches
+## `GroundRubble.MAX_REACH` of its size beyond that, which also covers the
+## spill's 52-unit ragged edge.
+const MALL_LOT_VISUAL_REACH: float = MALL_BERM_ROW_DEPTH * 0.3 + MALL_CHUNK_MAX_SIZE * GroundRubble.MAX_REACH
 ## One mound, beam or stain per this many square world units of lot.
 const MALL_MOUND_AREA: float = 260000.0
 const MALL_BEAM_AREA: float = 900000.0
@@ -289,6 +294,28 @@ func get_world_bounds(clearance: float = 0.0) -> Rect2:
 		sine * expanded.x + cosine * expanded.y
 	)
 	return Rect2(position - rotated_half_size, rotated_half_size * 2.0)
+
+
+## The world rectangle this obstacle is drawn into: its footprint, every
+## imported sprite, and for an Ostari shell the lot's berm and spill. Collision
+## is `get_world_bounds`; this is for a caller that must not be drawn under an
+## obstacle, which the footprint alone does not promise, because a building's
+## sprite and a lot's berm both reach past it.
+func get_visual_bounds() -> Rect2:
+	var bounds: Rect2 = get_world_bounds(
+		MALL_LOT_VISUAL_REACH if visual_kind == VisualKind.MALL_SHELL and _foundation_dress != null else 0.0
+	)
+	for sprite: Sprite2D in _imported_visuals:
+		if not is_instance_valid(sprite) or sprite.texture == null:
+			continue
+		var local_rect: Rect2 = sprite.get_rect()
+		var to_world: Transform2D = global_transform * sprite.transform if is_inside_tree() else transform * sprite.transform
+		for corner: Vector2 in [
+			local_rect.position, Vector2(local_rect.end.x, local_rect.position.y),
+			local_rect.end, Vector2(local_rect.position.x, local_rect.end.y),
+		]:
+			bounds = bounds.expand(to_world * corner)
+	return bounds
 
 
 func get_shape_kind() -> int:
@@ -1238,7 +1265,9 @@ func _install_imported_vehicle_visual() -> void:
 		_uses_imported_replacement = true
 		return
 	var variant: int = posmod(stable_seed, 3)
-	if name == &"OstariCollapsedTruck":
+	# A car park holds cars, so the parked Ostari wrecks never roll the
+	# barrier variants the roadside footprints can.
+	if name == &"OstariCollapsedTruck" or String(name).begins_with("OstariParkedCar_"):
 		variant = 2
 	if variant == 0:
 		_install_imported_barrier_variant()

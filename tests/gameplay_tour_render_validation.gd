@@ -41,6 +41,14 @@ func _ready() -> void:
 	_scale_reference.call(&"configure", 1, &"heikki", Vector2.ZERO, false)
 	y_sort_world.add_child(_scale_reference)
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUTPUT_DIRECTORY))
+	# Stops are numbered in tour order, so adding one renames every capture after
+	# it; clear the old set first, or a stale frame under a retired name would sit
+	# beside the new ones and read as current.
+	var output_directory: DirAccess = DirAccess.open(ProjectSettings.globalize_path(OUTPUT_DIRECTORY))
+	if output_directory != null:
+		for file_name: String in output_directory.get_files():
+			if file_name.begins_with("tour_") and (file_name.ends_with(".png") or file_name.ends_with(".png.import")):
+				output_directory.remove(file_name)
 	await get_tree().process_frame
 
 	var stops: Array[Dictionary] = _build_stops()
@@ -90,12 +98,16 @@ func _build_stops() -> Array[Dictionary]:
 		_stop(&"camp_spur", _route_midpoint(world_map.get_camp_spur_route()), false, "The dirt spur leaving the bowl for the spine"),
 		_stop(&"city_street", Vector2(-8150.0, -7900.0), false, "Kaupunki street on the asphalt branch"),
 		_stop(&"city_block", _obstacle_position(&"CityBuilding_02") + Vector2(900.0, 500.0), false, "Shell corner and ground dress"),
-		_stop(&"city_choke", Vector2(-9200.0, -6000.0), false, "Dense ruin choke"),
+		_stop(&"city_choke", BesprenWorldMap2D.COMPOSITION.get_landmark_position(&"city_choke"), false, "The spine pinched between unbroken street walls"),
+		_stop(&"city_frontage", Vector2(BesprenWorldMap2D.CITY_SPINE_X, -6300.0), false, "Street walls broken by alleys"),
+		_stop(&"city_choke_night", BesprenWorldMap2D.COMPOSITION.get_landmark_position(&"city_choke"), true, "The pinch after dark: pavement and spill fall with the ground"),
 		_stop(&"mall_corridor", Vector2(4850.0, -5500.0), false, "Ostari corridor between the shells"),
+		_stop(&"mall_car_park", Vector2(3700.0, -6050.0), false, "Ostari parking bays and abandoned cars"),
 		_stop(&"mall_shell_edge", _obstacle_position(&"OstariNorthShell") + Vector2(0.0, 700.0), false, "Long shell front and its foundation"),
 		_stop(&"mall_pylon", _obstacle_position(&"OstariWestPylon") + Vector2(300.0, 0.0), false, "Mall approach"),
 		_stop(&"west_village_yard", Vector2(-8050.0, 8350.0), false, "West Kylat fenced yard"),
 		_stop(&"west_village_house", _obstacle_position(&"WestVillageHouse_00") + Vector2(550.0, 250.0), false, "Homestead silhouette"),
+		_stop(&"west_homestead", _yard_center(0), false, "A west yard: apron, woodpile, plot and trail"),
 		_stop(&"east_village_yard", Vector2(8050.0, 8350.0), false, "East Kylat road gate"),
 		_stop(&"east_rest_plot", BesprenWorldMap2D.EAST_REST_PLOT.get_center(), false, "East Kylat grave plot"),
 		_stop(&"east_village_night", BesprenWorldMap2D.EAST_REST_PLOT.get_center(), true, "East Kylat grave plot at night"),
@@ -115,6 +127,12 @@ func _build_stops() -> Array[Dictionary]:
 
 func _stop(stop_id: StringName, focus: Vector2, night: bool, intent: String) -> Dictionary:
 	return {&"id": stop_id, &"focus": focus, &"night": night, &"intent": intent}
+
+
+func _yard_center(index: int) -> Vector2:
+	var yards: WorldVillageYards2D = world_map.get_node_or_null("%VillageYards") as WorldVillageYards2D
+	var centers: PackedVector2Array = yards.get_apron_centers() if yards != null else PackedVector2Array()
+	return centers[index] if index < centers.size() else world_map.get_core_position()
 
 
 func _route_midpoint(route: PackedVector2Array) -> Vector2:

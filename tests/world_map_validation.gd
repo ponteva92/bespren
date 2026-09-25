@@ -37,10 +37,23 @@ const EXPECTED_WILDERNESS_ACCENT_ATLAS_PATH: String = (
 ## again for the camp's dirt spur, whose verge keeps the forest stands off it. The
 ## visual-only layers added beside it - understory, camp clearing and grave
 ## rows - are configured after the bake and write no flow, which this pin keeps
-## proving: any change to them leaves it where it is.
+## proving: any change to them leaves it where it is. Re-pinned a third time for
+## Phase 4's district jobs, whose Kaupunki street walls and Ostari parked cars
+## are colliding footprints; the urban fabric beside them writes no flow, and
+## `_validate_district_jobs` proves the walls leave the spine's two flow columns
+## open.
 const EXPECTED_FLOW_FIELD_MASK_HASH: String = (
-	"b221892cd1bcc1aab0c2d0fad8895b9144b3cf38d0e19c7a1c19992200a53fd7"
+	"5a08ceb28d008d6f80c599f0c1c9408065d5e1cd63e4055b15e38093497b49a2"
 )
+## Share of the Kaupunki spine, sampled every 50 units, where a building face
+## stands inside a 0.38 gameplay frame (632 units either side of the centreline).
+## Before the street walls it was 0.000 on both sides: every ruin stood 889 to
+## 1,000 units off the centreline, just outside the frame. With them it is 0.793
+## on at least one side and 0.533 west, 0.592 east.
+const MINIMUM_CITY_FRONTAGE_EITHER_SIDE: float = 0.75
+const MINIMUM_CITY_FRONTAGE_EACH_SIDE: float = 0.45
+const GAMEPLAY_HALF_FRAME_WIDTH: float = 632.0
+const EXPECTED_OSTARI_PARKING_BAYS: int = 34
 const AMBIENT_SCENERY_CAMP_CLEAR_RADIUS: float = 1760.0
 const AMBIENT_SCENERY_ROAD_CLEARANCE: float = 480.0
 const AMBIENT_SCENERY_CONNECTOR_ROAD_CLEARANCE: float = 360.0
@@ -147,6 +160,7 @@ func _run() -> void:
 	_validate_east_rest(world_map)
 	_validate_composition(world_map)
 	_validate_road_hierarchy(world_map)
+	_validate_district_jobs(world_map)
 
 	world_map.queue_free()
 	await process_frame
@@ -1742,6 +1756,190 @@ func _subtree_has_physics(node: Node) -> bool:
 		if _subtree_has_physics(child):
 			return true
 	return false
+
+
+## Phase 4 (DIST-01): Kaupunki reads as a dense street with a choke, and Ostari
+## as a mall car park. What is pinned is the job each district's geometry does
+## at the 0.38 zoom - frontage inside the frame, an unbroken pinch at the
+## landmark, bays either side of the mall road - and that none of it costs the
+## spine its flow or puts dress on a carriageway.
+func _validate_district_jobs(world_map: BesprenWorldMap2D) -> void:
+	var spine_x: float = BesprenWorldMap2D.CITY_SPINE_X
+	var walls: Array[WorldObstacle2D] = world_map.get_street_wall_obstacles()
+	_check(walls.size() >= 12, "Kaupunki's spine is lined by %d street-wall shells" % walls.size())
+	var faces_on_kerb_line: bool = not walls.is_empty()
+	var walls_are_buildings: bool = not walls.is_empty()
+	var walls_clear_of_holders: bool = true
+	var walls_clear_of_roads: bool = true
+	var spine_columns_open: bool = true
+	var column_xs: Array[float] = [spine_x - 128.0, spine_x + 128.0]
+	for wall: WorldObstacle2D in walls:
+		walls_are_buildings = walls_are_buildings and wall.get_visual_kind() == WorldObstacle2D.VisualKind.CITY_BUILDING
+		var bounds: Rect2 = wall.get_world_bounds(0.0)
+		var near_face: float = spine_x - bounds.end.x if wall.position.x < spine_x else bounds.position.x - spine_x
+		if near_face < BesprenWorldMap2D.STREET_WALL_CHOKE_FACE_OFFSET - 1.0 or near_face > BesprenWorldMap2D.STREET_WALL_FACE_OFFSET + 1.0:
+			faces_on_kerb_line = false
+		for other: WorldObstacle2D in world_map.get_obstacle_nodes():
+			if other != wall and other.get_world_bounds(0.0).intersects(bounds):
+				walls_clear_of_holders = false
+		for corner: Vector2 in [bounds.position, bounds.end, Vector2(bounds.position.x, bounds.end.y), Vector2(bounds.end.x, bounds.position.y)]:
+			if world_map.get_minimum_road_edge_distance(corner) < 45.0:
+				walls_clear_of_roads = false
+		var row_y: float = world_map.flow_cell_to_world(world_map.world_to_flow_cell(Vector2(spine_x, bounds.position.y))).y
+		while row_y <= bounds.end.y + BesprenWorldMap2D.FLOW_FIELD_CELL_SIZE:
+			for column_x: float in column_xs:
+				if wall.contains_world_point(Vector2(column_x, row_y), BesprenWorldMap2D.FLOW_FIELD_RASTER_CLEARANCE):
+					spine_columns_open = false
+			row_y += BesprenWorldMap2D.FLOW_FIELD_CELL_SIZE
+	_check(walls_are_buildings, "Every street wall is a city building shell")
+	_check(faces_on_kerb_line, "Every street wall fronts the kerb line, 360 to 420 units off the spine")
+	_check(walls_clear_of_holders, "No street wall overlaps any other footprint")
+	_check(walls_clear_of_roads, "No street wall reaches a road")
+	_check(spine_columns_open, "No street wall blocks either flow column beside the spine")
+
+	var choke_center: Vector2 = BesprenWorldMap2D.COMPOSITION.get_landmark_position(&"city_choke")
+	var choke_half: float = BesprenWorldMap2D.COMPOSITION.get_landmark_radius(&"city_choke")
+	_check(
+		is_equal_approx(choke_center.x, spine_x)
+		and world_map.get_biome_at_world(choke_center) == BesprenWorldMap2D.Biome.CITY,
+		"The city_choke landmark sits on Kaupunki's spine"
+	)
+	var choke_is_unbroken: bool = true
+	for side: int in [-1, 1]:
+		var covered: float = 0.0
+		for wall: WorldObstacle2D in walls:
+			if signf(wall.position.x - spine_x) != float(side):
+				continue
+			var bounds: Rect2 = wall.get_world_bounds(0.0)
+			var overlap: float = minf(bounds.end.y, choke_center.y + choke_half) - maxf(bounds.position.y, choke_center.y - choke_half)
+			if overlap > 0.0:
+				covered += overlap
+				if not is_zero_approx(wall.rotation):
+					choke_is_unbroken = false
+		var seams: float = BesprenWorldMap2D.STREET_WALL_CHOKE_SEAM * float(BesprenWorldMap2D.STREET_WALL_CHOKE_BLOCKS - 1)
+		if covered < choke_half * 2.0 - seams - 1.0:
+			choke_is_unbroken = false
+	_check(choke_is_unbroken, "At the city choke both frontages run unbroken and square for the landmark's whole diameter")
+
+	var samples: int = 0
+	var side_hits: Array[int] = [0, 0]
+	var either_hits: int = 0
+	var sample_y: float = BesprenWorldMap2D.STREET_WALL_SPAN.x
+	while sample_y <= BesprenWorldMap2D.STREET_WALL_SPAN.y:
+		samples += 1
+		var hit: Array[bool] = [false, false]
+		for obstacle: WorldObstacle2D in world_map.get_obstacle_nodes():
+			if obstacle.get_visual_kind() != WorldObstacle2D.VisualKind.CITY_BUILDING:
+				continue
+			var bounds: Rect2 = obstacle.get_world_bounds(0.0)
+			if sample_y < bounds.position.y or sample_y > bounds.end.y:
+				continue
+			var west_face: float = spine_x - bounds.end.x
+			var east_face: float = bounds.position.x - spine_x
+			hit[0] = hit[0] or (west_face > 0.0 and west_face <= GAMEPLAY_HALF_FRAME_WIDTH)
+			hit[1] = hit[1] or (east_face > 0.0 and east_face <= GAMEPLAY_HALF_FRAME_WIDTH)
+		side_hits[0] += 1 if hit[0] else 0
+		side_hits[1] += 1 if hit[1] else 0
+		either_hits += 1 if hit[0] or hit[1] else 0
+		sample_y += 50.0
+	var west_share: float = float(side_hits[0]) / float(maxi(samples, 1))
+	var east_share: float = float(side_hits[1]) / float(maxi(samples, 1))
+	var either_share: float = float(either_hits) / float(maxi(samples, 1))
+	_check(
+		either_share >= MINIMUM_CITY_FRONTAGE_EITHER_SIDE
+		and west_share >= MINIMUM_CITY_FRONTAGE_EACH_SIDE
+		and east_share >= MINIMUM_CITY_FRONTAGE_EACH_SIDE,
+		"A building face stands inside the gameplay frame along %.1f%% of the spine (west %.1f%%, east %.1f%%)" % [
+			either_share * 100.0, west_share * 100.0, east_share * 100.0
+		]
+	)
+
+	var fabric: WorldUrbanFabric2D = world_map.get_node_or_null("%UrbanFabric") as WorldUrbanFabric2D
+	_check(fabric != null, "World map owns the urban fabric layer")
+	if fabric == null:
+		return
+	_check_absolute_z(fabric, WorldUrbanFabric2D.FABRIC_Z, "Urban fabric")
+	var terrain_details: Node = world_map.get_node_or_null("%TerrainDetails")
+	_check(
+		terrain_details != null and fabric.get_index() > terrain_details.get_index(),
+		"Urban fabric draws after the roads, so the kerb sits on the shoulder's last units"
+	)
+	_check(fabric.find_children("*", "CollisionObject2D", true, false).is_empty(), "Urban fabric owns no physics")
+	var bed_half: float = WorldRoadNetwork2D.ASPHALT_INNER_WIDTH * 0.5
+	var pavement_stays_off_the_bed: bool = fabric.get_pavement_chunk_count() > 0
+	var spill_stays_on_the_pavement: bool = false
+	var rows_stay_off_the_road: bool = true
+	var rows_clear_of_buildings: bool = true
+	var rows: Array[Rect2] = []
+	for chunk: Node2D in fabric.get_chunks():
+		var bounds: Rect2 = chunk.call(&"get_draw_bounds") as Rect2
+		match int(chunk.get(&"kind")):
+			WorldUrbanFabricChunk2D.Kind.PAVEMENT:
+				var inner: float = minf(absf(bounds.position.x - spine_x), absf(bounds.end.x - spine_x))
+				var outer: float = maxf(absf(bounds.position.x - spine_x), absf(bounds.end.x - spine_x))
+				if inner < bed_half or outer > BesprenWorldMap2D.STREET_WALL_FACE_OFFSET + 1.0:
+					pavement_stays_off_the_bed = false
+			WorldUrbanFabricChunk2D.Kind.SPILL:
+				var inner: float = minf(absf(bounds.position.x - spine_x), absf(bounds.end.x - spine_x))
+				spill_stays_on_the_pavement = int(chunk.call(&"get_piece_count")) > 0 and inner >= bed_half
+			WorldUrbanFabricChunk2D.Kind.PARKING:
+				rows.append(bounds)
+				if absf(bounds.position.y - BesprenWorldMap2D.OSTARI_ROAD_Y) < WorldRoadNetwork2D.ASPHALT_OUTER_WIDTH * 0.5 or absf(bounds.end.y - BesprenWorldMap2D.OSTARI_ROAD_Y) < WorldRoadNetwork2D.ASPHALT_OUTER_WIDTH * 0.5:
+					rows_stay_off_the_road = false
+				for obstacle: WorldObstacle2D in world_map.get_obstacle_nodes():
+					var kind: int = obstacle.get_visual_kind()
+					if (kind == WorldObstacle2D.VisualKind.MALL_SHELL or kind == WorldObstacle2D.VisualKind.CITY_BUILDING) and obstacle.get_world_bounds(0.0).intersects(bounds):
+						rows_clear_of_buildings = false
+	_check(pavement_stays_off_the_bed, "Kaupunki pavement lies between the asphalt bed and the kerb line")
+	_check(spill_stays_on_the_pavement, "The choke's rubble spill lies on the pavement, off the carriageway")
+	_check(
+		fabric.get_parking_bay_count() == EXPECTED_OSTARI_PARKING_BAYS and rows.size() == 2,
+		"Ostari's mall road is flanked by two rows of %d parking bays" % (EXPECTED_OSTARI_PARKING_BAYS / 2)
+	)
+	_check(rows_stay_off_the_road, "Parking rows open onto the mall road without painting over it")
+	_check(rows_clear_of_buildings, "No parking row runs under a shell, pylon or ruin")
+	var parked_cars: int = 0
+	var cars_are_cars_in_bays: bool = true
+	for obstacle: WorldObstacle2D in world_map.get_obstacle_nodes():
+		if not String(obstacle.name).begins_with(BesprenWorldMap2D.OSTARI_PARKED_CAR_PREFIX):
+			continue
+		parked_cars += 1
+		var in_a_row: bool = false
+		for row: Rect2 in rows:
+			in_a_row = in_a_row or row.has_point(obstacle.position)
+		if not in_a_row or not obstacle.has_node("ImportedVehicleWreckVisual"):
+			cars_are_cars_in_bays = false
+	_check(
+		parked_cars == BesprenWorldMap2D.OSTARI_PARKED_CARS.size() and cars_are_cars_in_bays,
+		"%d abandoned cars stand in Ostari's bays, drawn as cars rather than barriers" % parked_cars
+	)
+
+	var yards: WorldVillageYards2D = world_map.get_node_or_null("%VillageYards") as WorldVillageYards2D
+	_check(yards != null, "World map owns the village yards layer")
+	if yards == null:
+		return
+	_check_absolute_z(yards, WorldVillageYards2D.YARDS_Z, "Village yards")
+	_check(yards.find_children("*", "CollisionObject2D", true, false).is_empty(), "Village yards own no physics")
+	var houses: int = 0
+	for obstacle: WorldObstacle2D in world_map.get_obstacle_nodes():
+		if String(obstacle.name).contains("VillageHouse_"):
+			houses += 1
+	_check(
+		yards.get_yard_count() >= houses - 2 and yards.get_item_count(&"woodpile") >= 5 and yards.get_item_count(&"plot") >= 2,
+		"%d of %d village houses have a yard, with %d woodpiles and %d garden plots" % [
+			yards.get_yard_count(), houses, yards.get_item_count(&"woodpile"), yards.get_item_count(&"plot")
+		]
+	)
+	var every_item_on_open_ground: bool = yards.get_yard_count() > 0
+	for chunk: Node2D in yards.get_chunks():
+		for footprint: Vector3 in chunk.call(&"get_item_footprints") as Array[Vector3]:
+			var at: Vector2 = Vector2(footprint.x, footprint.y)
+			if (
+				not world_map.is_position_walkable(at, footprint.z)
+				or world_map.get_minimum_road_edge_distance(at) <= footprint.z
+			):
+				every_item_on_open_ground = false
+	_check(every_item_on_open_ground, "Every yard item lies on open ground, clear of every footprint and off every road")
 
 
 func _check_absolute_z(canvas_item: CanvasItem, expected_z: int, label: String) -> void:
