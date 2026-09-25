@@ -67,6 +67,15 @@ const DENSE_CITY_RUIN_COUNT: int = 8
 const DENSE_MALL_RUIN_COUNT: int = 5
 const DENSE_VILLAGE_RUIN_COUNT_PER_SIDE: int = 2
 const DENSE_LANDMARK_ROAD_EDGE_CLEARANCE: float = 360.0
+## East Kylat's walled grave plot, east of the village's dirt road at x 8192.
+## See `_build_village_east`.
+const EAST_REST_ROAD_X: float = 8192.0
+const EAST_REST_PLOT: Rect2 = Rect2(8950.0, 7500.0, 2400.0, 1800.0)
+## How far each wall run stops short of its neighbour. 150 either side opens
+## 300 units at every corner and mid-side - wide enough for a survivor, and
+## deliberately narrower than the flow raster's 430-unit gap, so the horde has
+## no reason to route through a graveyard.
+const EAST_REST_WALL_GAP: float = 150.0
 const DENSE_FOREST_TREES_PER_CELL: int = 3
 const DENSE_WILDERNESS_TREES_PER_CELL: int = 1
 const DENSE_TREE_CAMP_CLEAR_RADIUS: float = 1800.0
@@ -85,6 +94,7 @@ const MIN_WILDERNESS_GROVE_TREE_COUNT: int = 35
 @onready var ground_cover: Node2D = %GroundCover
 @onready var forest_understory: WorldForestUnderstory2D = %ForestUnderstory
 @onready var camp_clearing: WorldCampClearing2D = %CampClearing
+@onready var graveyard: WorldGraveyard2D = %Graveyard
 @onready var ambient_scenery: Node2D = %AmbientScenery
 @onready var structures: Node2D = %Structures
 @onready var world_bounds: Node2D = %WorldBounds
@@ -174,6 +184,7 @@ func ensure_built() -> void:
 		Callable(self, &"get_biome_at_world")
 	)
 	camp_clearing.configure(STARTING_CAMP_POSITION, get_camp_satellite_positions())
+	graveyard.configure(EAST_REST_PLOT.grow(-110.0))
 
 
 func get_camp_satellite_positions() -> PackedVector2Array:
@@ -638,44 +649,87 @@ func _build_village_west() -> void:
 	)
 
 
+## East Kylat is the contract's "abandoned rest" (D-13, D-14): the same quiet
+## family as the west yards with a different job. It was built as the west
+## village translated about +16,100 in X - the same four house corners, the
+## same fence ring straddling the road and the same pole run - so at the
+## gameplay zoom the two read as one place twice. It is now a hamlet of three
+## houses huddled west of the dirt road, a caretaker's house to the north-east,
+## and a walled grave plot east of the road whose rows `WorldGraveyard2D` draws.
+## The plot's walls leave the corners and the middle of the long sides open, so
+## a player can walk in and the plot can never seal a resource node away; the
+## west wall faces the road and carries the chain-link gate.
 func _build_village_east() -> void:
-	var house_positions: PackedVector2Array = PackedVector2Array([
-		Vector2(5300.0, 6900.0),
-		Vector2(10900.0, 6800.0),
-		Vector2(5350.0, 9850.0),
-		Vector2(10800.0, 10100.0),
-	])
-	for house_index: int in range(house_positions.size()):
+	var houses: Array[Dictionary] = [
+		{&"position": Vector2(5250.0, 7400.0), &"rotation": 0.05},
+		{&"position": Vector2(6750.0, 7700.0), &"rotation": -0.09},
+		{&"position": Vector2(5900.0, 8800.0), &"rotation": 0.12},
+		{&"position": Vector2(11300.0, 6500.0), &"rotation": -0.04},
+	]
+	for house_index: int in range(houses.size()):
 		_add_rectangle_obstacle(
 			StringName("EastVillageHouse_%02d" % house_index),
-			house_positions[house_index],
+			houses[house_index][&"position"],
 			Vector2(1260.0, 920.0),
 			WorldObstacle2D.VisualKind.VILLAGE_HOUSE,
-			0.05 * float((house_index % 2) * 2 - 1)
+			houses[house_index][&"rotation"]
 		)
-	_add_village_fences(&"East", Vector2(8050.0, 8350.0), 1.0)
-	_add_village_utility_poles(&"East", 8050.0)
-	# The eastern field uses a different three-family silhouette and an offset
-	# composition so the paired villages do not read as mirrored copies.
+	_add_east_rest_plot_walls()
+	# Three poles on the hamlet side of the road with the fourth long gone - a
+	# line nobody maintains - where the west village runs five in a zigzag.
+	var pole_rows: PackedFloat32Array = PackedFloat32Array([6400.0, 7380.0, 9340.0, 10320.0, 11300.0])
+	for pole_index: int in range(pole_rows.size()):
+		_add_circle_obstacle(
+			StringName("EastUtilityPole_%02d" % pole_index),
+			Vector2(EAST_REST_ROAD_X - 560.0 - float(pole_index % 2) * 90.0, pole_rows[pole_index]),
+			48.0,
+			WorldObstacle2D.VisualKind.UTILITY_POLE
+		)
 	_add_rectangle_obstacle(
 		&"EastVillageVehicleWreck",
-		Vector2(9550.0, 8300.0),
+		Vector2(6750.0, 10450.0),
 		Vector2(560.0, 280.0),
 		WorldObstacle2D.VisualKind.VEHICLE_WRECK,
 		-0.24
 	)
 	_add_circle_obstacle(
 		&"EastVillageScrapCache",
-		Vector2(6850.0, 8200.0),
+		Vector2(4900.0, 8300.0),
 		105.0,
 		WorldObstacle2D.VisualKind.SCRAP_PILE
 	)
 	_add_circle_obstacle(
 		&"EastVillageMossRock",
-		Vector2(9650.0, 9000.0),
+		Vector2(10800.0, 10600.0),
 		150.0,
 		WorldObstacle2D.VisualKind.MOSSY_ROCK
 	)
+
+
+## The plot's six wall runs, named `EastVillageFence_00` to `_05` so the
+## district family keeps its two chain-link gates on `_00` (the road wall) and
+## `_03` (the south wall). Every run stops short of its neighbours.
+func _add_east_rest_plot_walls() -> void:
+	var plot: Rect2 = EAST_REST_PLOT
+	var center: Vector2 = plot.get_center()
+	var long_run: float = plot.size.x * 0.5 - EAST_REST_WALL_GAP
+	var side_run: float = plot.size.y - EAST_REST_WALL_GAP * 2.0
+	var quarter: float = plot.size.x * 0.25
+	var walls: Array[Dictionary] = [
+		{&"position": Vector2(plot.position.x, center.y), &"size": Vector2(120.0, side_run)},
+		{&"position": Vector2(center.x - quarter, plot.position.y), &"size": Vector2(long_run, 120.0)},
+		{&"position": Vector2(center.x + quarter, plot.position.y), &"size": Vector2(long_run, 120.0)},
+		{&"position": Vector2(center.x - quarter, plot.end.y), &"size": Vector2(long_run, 120.0)},
+		{&"position": Vector2(center.x + quarter, plot.end.y), &"size": Vector2(long_run, 120.0)},
+		{&"position": Vector2(plot.end.x, center.y), &"size": Vector2(120.0, side_run)},
+	]
+	for wall_index: int in range(walls.size()):
+		_add_rectangle_obstacle(
+			StringName("EastVillageFence_%02d" % wall_index),
+			walls[wall_index][&"position"],
+			walls[wall_index][&"size"],
+			WorldObstacle2D.VisualKind.WOODEN_FENCE
+		)
 
 
 func _build_density_landmarks() -> void:
@@ -700,7 +754,7 @@ func _build_density_landmarks() -> void:
 		{&"name": &"DenseWestVillageRuin_00", &"position": Vector2(-11250.0, 8500.0), &"size": Vector2(560.0, 480.0), &"rotation": -0.08, &"kind": WorldObstacle2D.VisualKind.VILLAGE_HOUSE},
 		{&"name": &"DenseWestVillageRuin_01", &"position": Vector2(-4550.0, 8500.0), &"size": Vector2(560.0, 480.0), &"rotation": 0.10, &"kind": WorldObstacle2D.VisualKind.VILLAGE_HOUSE},
 		{&"name": &"DenseEastVillageRuin_00", &"position": Vector2(4500.0, 11000.0), &"size": Vector2(560.0, 480.0), &"rotation": 0.08, &"kind": WorldObstacle2D.VisualKind.VILLAGE_HOUSE},
-		{&"name": &"DenseEastVillageRuin_01", &"position": Vector2(11250.0, 8500.0), &"size": Vector2(560.0, 480.0), &"rotation": -0.10, &"kind": WorldObstacle2D.VisualKind.VILLAGE_HOUSE},
+		{&"name": &"DenseEastVillageRuin_01", &"position": Vector2(11000.0, 11300.0), &"size": Vector2(560.0, 480.0), &"rotation": -0.10, &"kind": WorldObstacle2D.VisualKind.VILLAGE_HOUSE},
 	]
 	_add_density_rectangles(city_ruins)
 	_add_density_rectangles(mall_ruins)

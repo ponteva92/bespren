@@ -250,9 +250,9 @@ func _ready() -> void:
 					"EastUtilityPole_00",
 				],
 				"authored_obstacle_positions": {
-					"EastVillageHouse_00": [5300.0, 6900.0],
-					"EastVillageFence_00": [6200.0, 7000.0],
-					"EastUtilityPole_00": [7630.0, 6400.0],
+					"EastVillageHouse_00": [5250.0, 7400.0],
+					"EastVillageFence_00": [8950.0, 8400.0],
+					"EastUtilityPole_00": [7632.0, 6400.0],
 				},
 				"lighting": "day",
 				"output": EAST_VILLAGE_PATH,

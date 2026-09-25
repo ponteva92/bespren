@@ -32,8 +32,13 @@ const WILDERNESS_ACCENT_ROAD_CLEARANCE: float = 480.0
 const EXPECTED_WILDERNESS_ACCENT_ATLAS_PATH: String = (
 	"res://assets/2d/environment/polyhaven/polyhaven_environment_atlas.png"
 )
+## Re-pinned for the East Kylat relayout (hamlet plus walled grave plot), which
+## moves colliding houses, walls, poles, a ruin and three dressing props. The
+## visual-only layers added beside it - understory, camp clearing and grave
+## rows - are configured after the bake and write no flow, which this pin keeps
+## proving: any change to them leaves it where it is.
 const EXPECTED_FLOW_FIELD_MASK_HASH: String = (
-	"bc4506bb0d0e256255d6231f29a03a4637bbf4d800339d5563702d18c5db7947"
+	"23bcaad296d5597cc67dfc6ec6ea94faaf2e3c7d8969417b71279bb095c6bf4a"
 )
 const AMBIENT_SCENERY_CAMP_CLEAR_RADIUS: float = 1760.0
 const AMBIENT_SCENERY_ROAD_CLEARANCE: float = 480.0
@@ -87,17 +92,17 @@ const EXPECTED_VILLAGE_DRESSING: Dictionary = {
 		&"biome": BesprenWorldMap2D.Biome.VILLAGE_WEST,
 	},
 	&"EastVillageVehicleWreck": {
-		&"position": Vector2(9550.0, 8300.0),
+		&"position": Vector2(6750.0, 10450.0),
 		&"kind": WorldObstacle2D.VisualKind.VEHICLE_WRECK,
 		&"biome": BesprenWorldMap2D.Biome.VILLAGE_EAST,
 	},
 	&"EastVillageScrapCache": {
-		&"position": Vector2(6850.0, 8200.0),
+		&"position": Vector2(4900.0, 8300.0),
 		&"kind": WorldObstacle2D.VisualKind.SCRAP_PILE,
 		&"biome": BesprenWorldMap2D.Biome.VILLAGE_EAST,
 	},
 	&"EastVillageMossRock": {
-		&"position": Vector2(9650.0, 9000.0),
+		&"position": Vector2(10800.0, 10600.0),
 		&"kind": WorldObstacle2D.VisualKind.MOSSY_ROCK,
 		&"biome": BesprenWorldMap2D.Biome.VILLAGE_EAST,
 	},
@@ -138,6 +143,7 @@ func _run() -> void:
 	_validate_motion_resolver(world_map)
 	_validate_forest_understory(world_map)
 	_validate_camp_clearing(world_map)
+	_validate_east_rest(world_map)
 
 	world_map.queue_free()
 	await process_frame
@@ -1253,7 +1259,7 @@ func _validate_flow_field(world_map: BesprenWorldMap2D) -> void:
 	_check(world_map.get_flow_field_dimensions() == expected_dimensions, "Flow-field mask is exactly 112x112")
 	_check(
 		world_map.get_flow_field_mask_hash() == EXPECTED_FLOW_FIELD_MASK_HASH,
-		"Visual-only WildernessAccent leaves the complete 112x112 flow-field mask byte-identical"
+		"Visual-only layers leave the complete 112x112 flow-field mask at its pinned hash"
 	)
 	var blocked_count: int = world_map.get_blocked_flow_cell_count()
 	_check(blocked_count > 0, "Flow-field mask contains blocked cells")
@@ -1460,6 +1466,76 @@ func _validate_camp_clearing(world_map: BesprenWorldMap2D) -> void:
 		"Camp clearing wears the lit dirt grain the dirt roads use"
 	)
 	_check(not _subtree_has_physics(clearing), "Camp clearing owns no physics")
+
+
+## East Kylat must stop being the west village translated. The strongest
+## statement of that is geometric: no east house or wall sits where the west's
+## mirror image would put it. The rest pins the plot's job - walls with gaps a
+## survivor fits through, grave rows inside, and a gate on the road side.
+func _validate_east_rest(world_map: BesprenWorldMap2D) -> void:
+	var west: Array[Vector2] = []
+	var east: Array[Vector2] = []
+	var walls: Array[WorldObstacle2D] = []
+	for obstacle: WorldObstacle2D in world_map.get_obstacle_nodes():
+		var obstacle_name: String = String(obstacle.name)
+		if obstacle_name.begins_with("WestVillageHouse_") or obstacle_name.begins_with("WestVillageFence_"):
+			west.append(obstacle.position)
+		elif obstacle_name.begins_with("EastVillageHouse_") or obstacle_name.begins_with("EastVillageFence_"):
+			east.append(obstacle.position)
+			if obstacle_name.begins_with("EastVillageFence_"):
+				walls.append(obstacle)
+	var translated_matches: int = 0
+	var mirrored_matches: int = 0
+	for east_position: Vector2 in east:
+		for west_position: Vector2 in west:
+			if east_position.distance_to(west_position + Vector2(16100.0, 0.0)) < 400.0:
+				translated_matches += 1
+			if east_position.distance_to(Vector2(-west_position.x, west_position.y)) < 400.0:
+				mirrored_matches += 1
+	_check(
+		translated_matches <= 1 and mirrored_matches <= 1,
+		"East Kylat is its own layout: %d translated and %d mirrored matches with the west (at most one each)" % [
+			translated_matches, mirrored_matches
+		]
+	)
+	var plot: Rect2 = BesprenWorldMap2D.EAST_REST_PLOT
+	var every_wall_on_plot: bool = walls.size() == 6
+	for wall: WorldObstacle2D in walls:
+		var on_edge: bool = (
+			is_equal_approx(wall.position.x, plot.position.x)
+			or is_equal_approx(wall.position.x, plot.end.x)
+			or is_equal_approx(wall.position.y, plot.position.y)
+			or is_equal_approx(wall.position.y, plot.end.y)
+		)
+		if not on_edge:
+			every_wall_on_plot = false
+	_check(every_wall_on_plot, "East Kylat's six wall runs stand on the grave plot's edges")
+	# Every corner and the middle of each long side must admit a survivor.
+	var openings: Array[Vector2] = [
+		plot.position,
+		Vector2(plot.end.x, plot.position.y),
+		plot.end,
+		Vector2(plot.position.x, plot.end.y),
+		Vector2(plot.get_center().x, plot.position.y),
+		Vector2(plot.get_center().x, plot.end.y),
+	]
+	var every_opening_is_walkable: bool = true
+	for opening: Vector2 in openings:
+		if not world_map.is_position_walkable(opening, PLAYER_RADIUS):
+			every_opening_is_walkable = false
+	_check(every_opening_is_walkable, "The grave plot's corners and long-side middles are open to a survivor")
+	_check(
+		world_map.is_position_walkable(plot.get_center(), PLAYER_RADIUS),
+		"The grave plot's interior is walkable"
+	)
+	var graves: WorldGraveyard2D = world_map.graveyard
+	_check(graves != null and not _subtree_has_physics(graves), "Grave rows are a visual-only layer")
+	if graves != null:
+		_check_absolute_z(graves, EXPECTED_DECOR_Z, "Grave rows")
+		_check(
+			graves.get_marker_count() >= 30 and plot.encloses(graves.get_plot()),
+			"%d grave markers stand inside the walled plot" % graves.get_marker_count()
+		)
 
 
 func _subtree_has_physics(node: Node) -> bool:

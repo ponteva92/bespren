@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://src/world/world_map_2d.gd" id="1_map"]
 [ext_resource type="Script" path="res://src/world/world_road_network_2d.gd" id="2_roads"]
@@ -8,6 +8,7 @@
 [ext_resource type="Script" path="res://src/world/world_ground_cover_2d.gd" id="8_ground_cover"]
 [ext_resource type="Script" path="res://src/world/world_forest_understory_2d.gd" id="9_forest_understory"]
 [ext_resource type="Script" path="res://src/world/world_camp_clearing_2d.gd" id="10_camp_clearing"]
+[ext_resource type="Script" path="res://src/world/world_graveyard_2d.gd" id="11_graveyard"]
 [ext_resource type="Texture2D" path="res://assets/2d/environment/terrain/polyhaven_terrain_atlas.png" id="4_terrain_atlas"]
 [ext_resource type="Texture2D" path="res://assets/2d/environment/terrain/bespren_biome_blend_mask.png" id="5_biome_mask"]
 [ext_resource type="Shader" path="res://shaders/terrain_material_blend.gdshader" id="6_terrain_shader"]
@@ -77,6 +78,12 @@ unique_name_in_owner = true
 z_index = -5
 z_as_relative = false
 script = ExtResource("3_decor")
+
+[node name="Graveyard" type="Node2D" parent="."]
+unique_name_in_owner = true
+z_index = -5
+z_as_relative = false
+script = ExtResource("11_graveyard")
 
 [node name="WildernessAccent" type="Node2D" parent="."]
 unique_name_in_owner = true
