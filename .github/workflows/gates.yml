@@ -1,0 +1,76 @@
+name: Gates
+
+# Re-runs every proof gate on each push, so a capture set can never again
+# describe an older build than the one in the branch. Everything runs through
+# tools/ci/run_gates.sh, which is the same entry point a workstation uses.
+#
+# The capture gates render on Mesa lavapipe (software Vulkan) under Xvfb with
+# the Mobile renderer. That proves logical 480x270 composition and readability;
+# it does not prove Android GPU output, frame time, thermals, or touch.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gates-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: 4.7.1-stable
+  # From Godot's published SHA512-SUMS.txt for this release.
+  GODOT_SHA512: 4ccdab7a48eeccbe8819a2fc1f6262f8d72065d98601bcb3743fcbd7ebd39f373758a788ee3293a05ec5b2c48538266c437404312e372225cd2df273945a2de9
+
+jobs:
+  gates:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: godot-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/godot
+          key: godot-${{ env.GODOT_VERSION }}-linux-x86_64
+
+      - name: Download Godot
+        if: steps.godot-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/godot
+          zip="Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          curl -sSfL -o "/tmp/${zip}" \
+            "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/${zip}"
+          echo "${GODOT_SHA512}  /tmp/${zip}" | sha512sum -c -
+          unzip -q "/tmp/${zip}" -d ~/godot
+          chmod +x ~/godot/Godot_v${GODOT_VERSION}_linux.x86_64
+
+      - name: Install software Vulkan and a virtual display
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb mesa-vulkan-drivers libvulkan1
+          icd="$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)"
+          echo "VK_ICD_FILENAMES=${icd}" >> "$GITHUB_ENV"
+          echo "GODOT=${HOME}/godot/Godot_v${GODOT_VERSION}_linux.x86_64" >> "$GITHUB_ENV"
+
+      - name: Run gates
+        run: xvfb-run -a -s "-screen 0 1280x720x24" tools/ci/run_gates.sh
+
+      - name: Publish summary
+        if: always()
+        run: cat artifacts/ci/summary.md >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Upload captures and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gates-${{ github.sha }}
+          path: artifacts/
+          retention-days: 14
+          if-no-files-found: warn

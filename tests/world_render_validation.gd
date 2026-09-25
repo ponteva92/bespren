@@ -383,6 +383,16 @@ func _ready() -> void:
 		return
 	metadata_file.store_string(JSON.stringify(metadata, "\t"))
 	metadata_file.close()
+	# These captures stand in for the phone, so they are only evidence when the
+	# Mobile renderer drew them. `--rendering-driver vulkan` without
+	# `--rendering-method` silently selects Forward+ and still renders.
+	if RenderingServer.get_current_rendering_method() != "mobile":
+		push_error(
+			"WORLD RENDER FAILED: rendered with %s, not the Mobile renderer"
+			% RenderingServer.get_current_rendering_method()
+		)
+		get_tree().quit(1)
+		return
 	print(
 		"WORLD RENDER OK | method=%s | driver=%s | captures=25"
 		% [
